@@ -24,7 +24,7 @@ services, run it locally, build your domain on top, and ship.
 ### Cloudflare D1
 
 ```bash
-npx wrangler d1 create starter-app
+npx wrangler d1 create mudhal
 ```
 
 Paste the printed `database_id` into `wrangler.jsonc` (replace
@@ -104,7 +104,7 @@ npx wrangler secret put CLERK_PUBLISHABLE_KEY
 npx wrangler secret put POLAR_ACCESS_TOKEN
 # ...and the rest of the keys from .dev.vars
 
-npx wrangler d1 migrations apply starter-app --remote
+npx wrangler d1 migrations apply mudhal --remote
 pnpm deploy
 ```
 

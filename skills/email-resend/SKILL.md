@@ -20,7 +20,7 @@ controller via `c.var.services.email`.
 - A Resend account and API key — https://resend.com/api-keys
 - Add to `.dev.vars`:
   - `RESEND_API_KEY=re_xxx`
-  - `EMAIL_FROM=Starter <onboarding@resend.dev>` (the sandbox sender works
+  - `EMAIL_FROM=Mudhal <onboarding@resend.dev>` (the sandbox sender works
     without verifying a domain; use your own verified domain in production)
 - Add both keys to `workers/env.d.ts` so `tsc` knows about them.
 

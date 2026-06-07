@@ -1,4 +1,4 @@
-# Starter
+# Mudhal
 
 An opinionated, production-grade foundation for SaaS applications. It makes the
 hard architectural decisions for you — authentication, multi-tenancy, a typed
@@ -20,7 +20,7 @@ app and a Hono API at `/api`, sharing one codebase and one deploy.
 pnpm install
 cp .dev.vars.example .dev.vars        # server secrets — fill in
 cp .env.local.example .env.local      # browser Clerk key — fill in
-npx wrangler d1 create starter-app  # create your D1 database
+npx wrangler d1 create mudhal  # create your D1 database
 # paste the printed database_id into wrangler.jsonc
 pnpm db:migrate:local
 pnpm doctor                            # verifies your setup

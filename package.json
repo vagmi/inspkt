@@ -1,5 +1,5 @@
 {
-	"name": "starter-app",
+	"name": "mudhal",
 	"private": true,
 	"type": "module",
 	"scripts": {
@@ -11,8 +11,8 @@
 		"db:generate": "drizzle-kit generate",
 		"db:studio": "drizzle-kit studio --config drizzle.config.local.ts",
 		"db:studio:remote": "drizzle-kit studio",
-		"db:migrate:local": "wrangler d1 migrations apply starter-app --local",
-		"db:migrate:remote": "wrangler d1 migrations apply starter-app --remote",
+		"db:migrate:local": "wrangler d1 migrations apply mudhal --local",
+		"db:migrate:remote": "wrangler d1 migrations apply mudhal --remote",
 		"deploy": "pnpm run build && wrangler deploy",
 		"preview": "pnpm run build && vite preview",
 		"cf-typegen": "wrangler types",

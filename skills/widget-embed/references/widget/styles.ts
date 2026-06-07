@@ -1,16 +1,16 @@
 /** Shadow-root CSS. Isolated from the host page; host pages can theme via
- * custom properties, e.g. `[data-starter] { --starter-accent: #0a6; }`. */
+ * custom properties, e.g. `[data-mudhal] { --mudhal-accent: #0a6; }`. */
 export const styles = /* css */ `
 :host {
   all: initial;
   display: block;
-  --st-bg: var(--starter-bg, #faf8f2);
-  --st-ink: var(--starter-ink, #2e2a23);
-  --st-muted: var(--starter-muted, #7d7468);
-  --st-border: var(--starter-border, #d9d2c3);
-  --st-accent: var(--starter-accent, #c2410c);
-  --st-radius: var(--starter-radius, 8px);
-  --st-font: var(--starter-font, ui-sans-serif, system-ui, sans-serif);
+  --st-bg: var(--mudhal-bg, #faf8f2);
+  --st-ink: var(--mudhal-ink, #2e2a23);
+  --st-muted: var(--mudhal-muted, #7d7468);
+  --st-border: var(--mudhal-border, #d9d2c3);
+  --st-accent: var(--mudhal-accent, #c2410c);
+  --st-radius: var(--mudhal-radius, 8px);
+  --st-font: var(--mudhal-font, ui-sans-serif, system-ui, sans-serif);
   --st-mono: ui-monospace, "SF Mono", Menlo, monospace;
 }
 .card {

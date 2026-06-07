@@ -15,7 +15,7 @@ export function createResendSender(
   apiKey: string,
   // Use a verified domain in production. The sandbox sender below works
   // immediately for testing without verifying a domain.
-  from = "Starter <onboarding@resend.dev>",
+  from = "Mudhal <onboarding@resend.dev>",
 ): EmailSender {
   return {
     async send(message) {

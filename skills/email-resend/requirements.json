@@ -8,7 +8,7 @@
     },
     {
       "name": "EMAIL_FROM",
-      "example": "Starter <onboarding@resend.dev>",
+      "example": "Mudhal <onboarding@resend.dev>",
       "file": ".dev.vars",
       "note": "onboarding@resend.dev works without verifying a domain"
     }

@@ -2,7 +2,7 @@ import { SignUp } from "@clerk/react-router";
 import { Link } from "react-router";
 
 export function meta() {
-  return [{ title: "Start free — Starter" }];
+  return [{ title: "Start free — Mudhal" }];
 }
 
 export default function SignUpPage() {
@@ -12,7 +12,7 @@ export default function SignUpPage() {
         to="/"
         className="font-heading text-xl font-semibold tracking-tight"
       >
-        Starter<span className="text-stamp">*</span>
+        Mudhal<span className="text-stamp">*</span>
       </Link>
       <SignUp fallbackRedirectUrl="/app" signInFallbackRedirectUrl="/app" />
     </div>

@@ -20,7 +20,7 @@ import type { Organization } from "../../../workers/api/repositories/organizatio
 import type { Route } from "./+types/items-list";
 
 export function meta() {
-  return [{ title: "Items — Starter" }];
+  return [{ title: "Items — Mudhal" }];
 }
 
 // The dashboard talks to the Hono API in-process (apiFetch) — same code path

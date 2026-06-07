@@ -40,7 +40,7 @@ function parseEnvFile(p) {
 const isPlaceholder = (v) =>
   !v || /xxx|REPLACE|your[_-]/i.test(v) || v.endsWith("_xxx");
 
-console.log(`\n${c.bold("Starter doctor")}\n`);
+console.log(`\n${c.bold("Mudhal doctor")}\n`);
 
 // --- .dev.vars ---
 console.log(c.bold(".dev.vars (server secrets)"));
@@ -77,7 +77,7 @@ const wrangler = fs.readFileSync(path.join(ROOT, "wrangler.jsonc"), "utf8");
 if (/REPLACE_WITH_YOUR_D1_DATABASE_ID/.test(wrangler)) {
   bad(
     "database_id is still the placeholder",
-    "npx wrangler d1 create starter-app, then paste the id into wrangler.jsonc",
+    "npx wrangler d1 create mudhal, then paste the id into wrangler.jsonc",
   );
 } else {
   ok("D1 database_id is set");

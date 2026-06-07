@@ -1,5 +1,5 @@
-// Starter embeddable widget. Usage on any site:
-//   <div data-starter="ITEM_ID"></div>
+// Mudhal embeddable widget. Usage on any site:
+//   <div data-mudhal="ITEM_ID"></div>
 //   <script src="https://<app-host>/widget.js" async></script>
 // Renders each tagged element in an isolated shadow root.
 import { h, render } from "preact";
@@ -19,10 +19,10 @@ const SCRIPT_SRC =
 const BASE = apiBase(SCRIPT_SRC);
 
 async function mount(el: HTMLElement) {
-  if (el.dataset.starterMounted) return;
-  el.dataset.starterMounted = "1";
+  if (el.dataset.mudhalMounted) return;
+  el.dataset.mudhalMounted = "1";
 
-  const id = el.dataset.starter;
+  const id = el.dataset.mudhal;
   if (!id) return;
 
   const shadow = el.attachShadow({ mode: "open" });
@@ -39,14 +39,14 @@ async function mount(el: HTMLElement) {
     root.innerHTML = "";
     render(h(EmbedView, { item }), root);
   } catch (err) {
-    console.error("[starter] failed to load", id, err);
+    console.error("[mudhal] failed to load", id, err);
     root.innerHTML = "";
   }
 }
 
 function scan() {
   document
-    .querySelectorAll<HTMLElement>("[data-starter]")
+    .querySelectorAll<HTMLElement>("[data-mudhal]")
     .forEach((el) => void mount(el));
 }
 

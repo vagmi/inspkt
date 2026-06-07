@@ -1,4 +1,4 @@
-# AGENTS.md — Starter
+# AGENTS.md — Mudhal
 
 An opinionated, production-grade foundation for SaaS applications: Clerk auth
 with organizations, Cloudflare D1 + Drizzle, and Polar billing — architected
@@ -112,7 +112,7 @@ point.
 - shadcn/ui components in `app/components/ui/` (alias `~/components/ui`); add
   more with `pnpm dlx shadcn@latest add <component>`.
 - Clerk components are themed via `clerkAppearance` in `app/root.tsx`.
-- The wordmark is `Starter*` — keep it in one place per page so renames are cheap.
+- The wordmark is `Mudhal*` — keep it in one place per page so renames are cheap.
 
 ## Conventions
 

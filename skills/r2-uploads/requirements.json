@@ -11,12 +11,12 @@
     {
       "type": "r2_bucket",
       "binding": "UPLOADS",
-      "snippet": "\"r2_buckets\": [{ \"binding\": \"UPLOADS\", \"bucket_name\": \"starter-uploads\" }]"
+      "snippet": "\"r2_buckets\": [{ \"binding\": \"UPLOADS\", \"bucket_name\": \"mudhal-uploads\" }]"
     }
   ],
   "deps": [],
   "commands": [
-    "npx wrangler r2 bucket create starter-uploads",
+    "npx wrangler r2 bucket create mudhal-uploads",
     "pnpm cf-typegen"
   ],
   "notes": [

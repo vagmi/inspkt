@@ -15,7 +15,7 @@ it), is built as a single minified **IIFE** to `public/widget.js`, and talks to
 a new **public, CORS-open** API group.
 
 ```html
-<div data-starter="ITEM_ID"></div>
+<div data-mudhal="ITEM_ID"></div>
 <script src="https://your-app.workers.dev/widget.js" async></script>
 ```
 

@@ -4,7 +4,7 @@ import { redirect } from "react-router";
 import type { Route } from "./+types/select-org";
 
 export function meta() {
-  return [{ title: "Choose an organization — Starter" }];
+  return [{ title: "Choose an organization — Mudhal" }];
 }
 
 export async function loader(args: Route.LoaderArgs) {

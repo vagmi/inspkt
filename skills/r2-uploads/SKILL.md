@@ -25,7 +25,7 @@ For R2 binding details, also consult the bundled **cloudflare** skill.
 - Add `R2_PUBLIC_BASE_URL: string` to `workers/env.d.ts`.
 
 ```
-npx wrangler r2 bucket create starter-uploads
+npx wrangler r2 bucket create mudhal-uploads
 ```
 
 ## Wiring
@@ -35,7 +35,7 @@ npx wrangler r2 bucket create starter-uploads
 Uncomment (or add) the R2 block, then regenerate types:
 
 ```jsonc
-"r2_buckets": [{ "binding": "UPLOADS", "bucket_name": "starter-uploads" }]
+"r2_buckets": [{ "binding": "UPLOADS", "bucket_name": "mudhal-uploads" }]
 ```
 
 ```
