@@ -1,0 +1,257 @@
+@import "tailwindcss" source(".");
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/fraunces";
+@import "@fontsource-variable/public-sans";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ------------------------------------------------------------------ */
+/*  "Paper & Ink" — the starter design language (restyle as you like)  */
+/*                                                                     */
+/*  Warm paper surfaces, ink-black type, hairline rules, perforated    */
+/*  tear-off edges, and one sharp accent — sealing-wax vermilion —     */
+/*  used sparingly for stamps, focus rings and links.                  */
+/*                                                                     */
+/*  Type:  Fraunces (display serif) / Public Sans (body) / IBM Plex    */
+/*  Mono (labels, data). Dark mode is the "carbon copy": warm          */
+/*  charcoal + cream ink.                                              */
+/* ------------------------------------------------------------------ */
+
+@theme inline {
+  --font-heading: "Fraunces Variable", "Georgia", serif;
+  --font-sans: "Public Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  /* the vermilion stamp accent */
+  --color-stamp: var(--stamp);
+  --color-stamp-foreground: var(--stamp-foreground);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* paper */
+  --background: oklch(0.9659 0.011 89);
+  --foreground: oklch(0.2462 0.013 76);
+  --card: oklch(0.9851 0.007 95);
+  --card-foreground: oklch(0.2462 0.013 76);
+  --popover: oklch(0.9851 0.007 95);
+  --popover-foreground: oklch(0.2462 0.013 76);
+  /* ink buttons */
+  --primary: oklch(0.2667 0.014 76);
+  --primary-foreground: oklch(0.9743 0.009 92);
+  --secondary: oklch(0.9304 0.013 88);
+  --secondary-foreground: oklch(0.2667 0.014 76);
+  --muted: oklch(0.9402 0.012 89);
+  --muted-foreground: oklch(0.4961 0.016 80);
+  --accent: oklch(0.9213 0.015 88);
+  --accent-foreground: oklch(0.2667 0.014 76);
+  --destructive: oklch(0.5471 0.205 28);
+  --border: oklch(0.8716 0.013 86);
+  --input: oklch(0.8392 0.014 84);
+  --ring: oklch(0.5944 0.196 33);
+  /* sealing-wax vermilion */
+  --stamp: oklch(0.5944 0.196 33);
+  --stamp-foreground: oklch(0.9851 0.007 95);
+  --chart-1: oklch(0.5944 0.196 33);
+  --chart-2: oklch(0.5176 0.085 165);
+  --chart-3: oklch(0.4961 0.016 80);
+  --chart-4: oklch(0.7042 0.13 70);
+  --chart-5: oklch(0.2667 0.014 76);
+  --radius: 0.375rem;
+  --sidebar: oklch(0.9505 0.012 90);
+  --sidebar-foreground: oklch(0.2462 0.013 76);
+  --sidebar-primary: oklch(0.2667 0.014 76);
+  --sidebar-primary-foreground: oklch(0.9743 0.009 92);
+  --sidebar-accent: oklch(0.9213 0.015 88);
+  --sidebar-accent-foreground: oklch(0.2667 0.014 76);
+  --sidebar-border: oklch(0.8716 0.013 86);
+  --sidebar-ring: oklch(0.5944 0.196 33);
+}
+
+/* carbon copy */
+.dark {
+  --background: oklch(0.2161 0.011 76);
+  --foreground: oklch(0.9213 0.013 90);
+  --card: oklch(0.2554 0.012 76);
+  --card-foreground: oklch(0.9213 0.013 90);
+  --popover: oklch(0.2554 0.012 76);
+  --popover-foreground: oklch(0.9213 0.013 90);
+  --primary: oklch(0.9213 0.013 90);
+  --primary-foreground: oklch(0.2462 0.013 76);
+  --secondary: oklch(0.3045 0.012 76);
+  --secondary-foreground: oklch(0.9213 0.013 90);
+  --muted: oklch(0.3045 0.012 76);
+  --muted-foreground: oklch(0.6818 0.014 84);
+  --accent: oklch(0.3045 0.012 76);
+  --accent-foreground: oklch(0.9213 0.013 90);
+  --destructive: oklch(0.6368 0.193 30);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.6818 0.175 38);
+  --stamp: oklch(0.6818 0.175 38);
+  --stamp-foreground: oklch(0.2161 0.011 76);
+  --chart-1: oklch(0.6818 0.175 38);
+  --chart-2: oklch(0.6437 0.09 168);
+  --chart-3: oklch(0.6818 0.014 84);
+  --chart-4: oklch(0.7642 0.12 72);
+  --chart-5: oklch(0.9213 0.013 90);
+  --sidebar: oklch(0.2554 0.012 76);
+  --sidebar-foreground: oklch(0.9213 0.013 90);
+  --sidebar-primary: oklch(0.9213 0.013 90);
+  --sidebar-primary-foreground: oklch(0.2462 0.013 76);
+  --sidebar-accent: oklch(0.3045 0.012 76);
+  --sidebar-accent-foreground: oklch(0.9213 0.013 90);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.6818 0.175 38);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    /* 17px base — everything is rem-based, so the whole UI scales with it */
+    font-size: 106.25%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.01em;
+  }
+  ::selection {
+    background: color-mix(in oklch, var(--stamp) 22%, transparent);
+  }
+}
+
+@utility font-heading {
+  font-family: var(--font-heading);
+}
+
+/* mono "form label" eyebrow — FIELD № 01, REQUIRED, etc. */
+@utility form-label-mono {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* perforated tear-off rule */
+@utility rule-perforated {
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--border) 0 8px,
+    transparent 8px 16px
+  );
+  background-size: 100% 1.5px;
+  background-repeat: no-repeat;
+  background-position: center;
+  height: 1.5px;
+}
+
+/* rubber-stamp badge */
+@utility stamp {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--stamp);
+  border: 1.5px solid var(--stamp);
+  border-radius: 2px;
+  padding: 0.2rem 0.55rem;
+  display: inline-block;
+}
+
+/* faint paper grain over the whole page */
+@utility paper-grain {
+  position: relative;
+}
+.paper-grain::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* staggered page-load reveal */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@utility animate-fade-up {
+  animation: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* the stamp thunks down: scales in with a slight overshoot + rotation */
+@keyframes stamp-in {
+  0% {
+    opacity: 0;
+    transform: rotate(-12deg) scale(2.2);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(-12deg) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-12deg) scale(1);
+  }
+}
+@utility animate-stamp-in {
+  animation: stamp-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}

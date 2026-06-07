@@ -1,0 +1,38 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "starter-app",
+	"compatibility_date": "2026-06-05",
+	"main": "./workers/app.ts",
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "starter-app",
+			// Replace with the id from `npx wrangler d1 create starter-app`
+			"database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID",
+			"migrations_dir": "drizzle/migrations"
+		}
+	]
+	/**
+	 * Static Assets — uncomment when you install the `widget-embed` skill so
+	 * that /widget.js (built into ./public) is served by the Worker.
+	 * https://developers.cloudflare.com/workers/static-assets/binding/
+	 */
+	// "assets": { "directory": "./public/", "binding": "ASSETS" }
+	/**
+	 * R2 bucket — uncomment when you install the `r2-uploads` skill.
+	 * Create it first: npx wrangler r2 bucket create starter-uploads
+	 * https://developers.cloudflare.com/r2/
+	 */
+	// "r2_buckets": [ { "binding": "UPLOADS", "bucket_name": "starter-uploads" } ]
+}

@@ -1,0 +1,28 @@
+{
+  "env": [
+    {
+      "name": "R2_PUBLIC_BASE_URL",
+      "example": "https://pub-xxxxxxxx.r2.dev",
+      "file": ".dev.vars",
+      "note": "Enable public access on the bucket in the Cloudflare dashboard to get this URL"
+    }
+  ],
+  "bindings": [
+    {
+      "type": "r2_bucket",
+      "binding": "UPLOADS",
+      "snippet": "\"r2_buckets\": [{ \"binding\": \"UPLOADS\", \"bucket_name\": \"starter-uploads\" }]"
+    }
+  ],
+  "deps": [],
+  "commands": [
+    "npx wrangler r2 bucket create starter-uploads",
+    "pnpm cf-typegen"
+  ],
+  "notes": [
+    "Uncomment the r2_buckets block in wrangler.jsonc (or paste the snippet above), then run cf-typegen so env.UPLOADS is typed.",
+    "Add R2_PUBLIC_BASE_URL to workers/env.d.ts.",
+    "Keys are org-prefixed (orgId/...) so tenants are isolated; never trust the client filename for the key.",
+    "See references/items-schema-patch.md to attach uploads to a resource."
+  ]
+}

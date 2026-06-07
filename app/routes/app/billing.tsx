@@ -1,0 +1,219 @@
+import { useSearchParams } from "react-router";
+import { Button } from "~/components/ui/button";
+import { apiFetch } from "~/lib/api-client.server";
+import { PLANS, type PlanId } from "~/lib/plans";
+import { cn } from "~/lib/utils";
+import type { BillingState } from "../../../workers/api/services/billing-service";
+import type { Route } from "./+types/billing";
+
+export function meta() {
+  return [{ title: "Billing — Starter" }];
+}
+
+export async function loader({ request }: Route.LoaderArgs) {
+  // Returning from checkout? Sync directly from Polar first, in case the
+  // subscription webhook hasn't landed yet.
+  if (new URL(request.url).searchParams.has("upgraded")) {
+    await apiFetch(request, "/api/billing/reconcile", { method: "POST" });
+  }
+
+  const { state } = await apiFetch<{ state: BillingState }>(
+    request,
+    "/api/billing/state",
+  );
+  return { state };
+}
+
+function Meter({
+  label,
+  used,
+  limit,
+}: {
+  label: string;
+  used: number;
+  limit: number;
+}) {
+  const pct = Math.min(100, Math.round((used / limit) * 100));
+  return (
+    <div>
+      <div className="flex items-baseline justify-between">
+        <span className="form-label-mono text-muted-foreground">{label}</span>
+        <span className="font-mono text-xs">
+          {used.toLocaleString()} / {limit.toLocaleString()}
+        </span>
+      </div>
+      <div className="bg-border/60 mt-2 h-1.5 overflow-hidden rounded-full">
+        <div
+          className={cn(
+            "h-full rounded-full",
+            pct >= 90 ? "bg-destructive" : "bg-stamp",
+          )}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+const PLAN_COPY: Record<
+  PlanId,
+  { name: string; price: string; blurb: string }
+> = {
+  free: {
+    name: "Free",
+    price: "$0",
+    blurb: "For trying things out and small projects.",
+  },
+  pro: {
+    name: "Pro",
+    price: "$12/mo",
+    blurb: "For teams shipping real volume, with webhooks.",
+  },
+  business: {
+    name: "Business",
+    price: "$49/mo",
+    blurb: "For serious operations at scale.",
+  },
+};
+
+function PlanCard({
+  plan,
+  current,
+  subscribed,
+}: {
+  plan: PlanId;
+  current: boolean;
+  subscribed: boolean;
+}) {
+  const limits = PLANS[plan];
+  const copy = PLAN_COPY[plan];
+
+  return (
+    <div
+      className={cn(
+        "bg-card relative rounded-lg border p-6",
+        current && "border-stamp ring-stamp/25 ring-2",
+      )}
+    >
+      {current && (
+        <span className="stamp absolute -right-2 -top-2 bg-card -rotate-3">
+          Current
+        </span>
+      )}
+      <p className="form-label-mono text-muted-foreground">{copy.name}</p>
+      <p className="mt-2 font-heading text-3xl">{copy.price}</p>
+      <p className="text-muted-foreground mt-2 min-h-10 text-sm">{copy.blurb}</p>
+
+      <ul className="mt-4 space-y-1.5 text-sm">
+        <li>{limits.maxItems.toLocaleString()} items</li>
+        <li>{limits.apiCallsPerMonth.toLocaleString()} API calls/month</li>
+        <li className={limits.webhooks ? "" : "text-muted-foreground/60"}>
+          {limits.webhooks ? "Webhooks included" : "No webhooks"}
+        </li>
+      </ul>
+
+      <div className="mt-6">
+        {current ? (
+          subscribed ? (
+            <Button variant="outline" asChild className="w-full">
+              <a href="/api/billing/portal">Manage subscription</a>
+            </Button>
+          ) : (
+            <Button variant="outline" disabled className="w-full">
+              Your plan
+            </Button>
+          )
+        ) : plan === "free" ? (
+          <Button variant="outline" disabled className="w-full">
+            Downgrade via portal
+          </Button>
+        ) : (
+          <Button asChild className="w-full">
+            <a href={`/api/billing/checkout?plan=${plan}`}>
+              Upgrade to {copy.name}
+            </a>
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function Billing({ loaderData }: Route.ComponentProps) {
+  const { state } = loaderData;
+  const [searchParams] = useSearchParams();
+  const subscribed = state.subscriptionStatus === "active";
+
+  return (
+    <div>
+      <p className="form-label-mono text-muted-foreground">
+        Account standing: good
+      </p>
+      <h1 className="mt-2 text-3xl">Billing</h1>
+
+      {searchParams.get("upgraded") && (
+        <div className="border-stamp/50 mt-4 inline-block rounded-md border border-dashed px-4 py-2">
+          <span className="stamp mr-2 px-1.5 py-0.5 text-[10px]">Paid</span>
+          <span className="text-sm">
+            {state.plan === "free"
+              ? "Thank you — your upgrade is processing and will reflect shortly."
+              : `Thank you — you're on the ${state.plan} plan.`}
+          </span>
+        </div>
+      )}
+
+      <div className="rule-perforated mt-6" />
+
+      {/* usage */}
+      <section className="mt-8 max-w-md space-y-5">
+        <h2 className="text-2xl">This period — {state.usage.period}</h2>
+        <Meter
+          label="API calls"
+          used={state.usage.apiCalls}
+          limit={state.limits.apiCallsPerMonth}
+        />
+        <Meter
+          label="Items"
+          used={state.usage.items}
+          limit={state.limits.maxItems}
+        />
+        {state.history.length > 1 && (
+          <div>
+            <p className="form-label-mono text-muted-foreground">History</p>
+            <div className="mt-2 space-y-1">
+              {state.history.map((h) => (
+                <div
+                  key={h.period}
+                  className="flex justify-between font-mono text-xs"
+                >
+                  <span className="text-muted-foreground">{h.period}</span>
+                  <span>{h.count.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
+      <div className="rule-perforated mt-10" />
+
+      {/* plans */}
+      <section className="mt-8">
+        <h2 className="text-2xl">Plans</h2>
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          {(Object.keys(PLANS) as PlanId[]).map((plan) => (
+            <PlanCard
+              key={plan}
+              plan={plan}
+              current={state.plan === plan}
+              subscribed={subscribed}
+            />
+          ))}
+        </div>
+        <p className="form-label-mono text-muted-foreground mt-6">
+          Payments processed by Polar · cancel any time via the portal
+        </p>
+      </section>
+    </div>
+  );
+}

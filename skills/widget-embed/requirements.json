@@ -1,0 +1,22 @@
+{
+  "env": [],
+  "bindings": [
+    {
+      "type": "assets",
+      "binding": "ASSETS",
+      "snippet": "\"assets\": { \"directory\": \"./public/\", \"binding\": \"ASSETS\" }"
+    }
+  ],
+  "deps": ["preact"],
+  "commands": [
+    "pnpm add preact",
+    "pnpm build:widget"
+  ],
+  "notes": [
+    "Add a build:widget script and include it in build: \"build:widget\": \"vite build --config vite.config.widget.ts\", \"build\": \"pnpm run build:widget && react-router build\".",
+    "Add tsconfig.widget.json to the references array in tsconfig.json.",
+    "Uncomment the assets block in wrangler.jsonc so /widget.js is served from ./public.",
+    "Register the public controller in workers/api/index.ts BEFORE the authed group.",
+    "Apply references/public-read-patch.md to add an unscoped public read."
+  ]
+}

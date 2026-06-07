@@ -1,0 +1,25 @@
+.DS_Store
+.env
+.env.*
+/node_modules/
+*.tsbuildinfo
+
+# React Router
+/.react-router/
+/build/
+
+# Cloudflare
+.mf
+.wrangler
+.dev.vars*
+worker-configuration.d.ts
+
+# Reference app (not part of the template)
+/references/
+
+# Installed skills land here; the bundled library in /skills is tracked.
+.claude/skills/*
+!.claude/skills/.gitkeep
+
+!.dev.vars.example
+!.env.local.example

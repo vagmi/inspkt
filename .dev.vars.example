@@ -1,0 +1,17 @@
+# Copy to .dev.vars and fill in. Never commit .dev.vars.
+# These are the server-side secrets the baseline (Clerk auth + Polar billing) needs.
+# Skills add their own keys on install (e.g. RESEND_API_KEY, SVIX_API_KEY, R2_PUBLIC_BASE_URL).
+
+CLERK_SECRET_KEY=sk_test_xxx
+CLERK_PUBLISHABLE_KEY=pk_test_xxx
+# Optional: only needed if you wire up the Clerk -> D1 org-sync webhook.
+# Orgs are also mirrored lazily on first request, so you can skip this for the workshop.
+CLERK_WEBHOOK_SECRET=whsec_xxx
+
+POLAR_ACCESS_TOKEN=polar_oat_xxx
+POLAR_WEBHOOK_SECRET=polar_whs_xxx
+POLAR_PRO_PRODUCT_ID=prod_xxx
+POLAR_BIZ_PRODUCT_ID=prod_xxx
+POLAR_SERVER=sandbox
+
+APP_URL=http://localhost:5173

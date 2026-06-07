@@ -1,0 +1,18 @@
+{
+  "env": [
+    {
+      "name": "SVIX_API_KEY",
+      "example": "sk_xxx",
+      "file": ".dev.vars",
+      "note": "Create at https://dashboard.svix.com (or run a Svix sandbox)"
+    }
+  ],
+  "bindings": [],
+  "deps": [],
+  "commands": [],
+  "notes": [
+    "The `svix` npm package is already a baseline dependency (used to verify the Clerk webhook), so no install is needed.",
+    "Add SVIX_API_KEY to workers/env.d.ts so typecheck passes.",
+    "Outbound webhooks are gated on the plan's `webhooks` flag (free = off)."
+  ]
+}

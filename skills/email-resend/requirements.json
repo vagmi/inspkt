@@ -1,0 +1,23 @@
+{
+  "env": [
+    {
+      "name": "RESEND_API_KEY",
+      "example": "re_xxx",
+      "file": ".dev.vars",
+      "note": "Create at https://resend.com/api-keys"
+    },
+    {
+      "name": "EMAIL_FROM",
+      "example": "Starter <onboarding@resend.dev>",
+      "file": ".dev.vars",
+      "note": "onboarding@resend.dev works without verifying a domain"
+    }
+  ],
+  "bindings": [],
+  "deps": [],
+  "commands": [],
+  "notes": [
+    "Add RESEND_API_KEY and EMAIL_FROM to workers/env.d.ts so typecheck passes.",
+    "Send email off the response path with waitUntil() so requests stay fast."
+  ]
+}
