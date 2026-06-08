@@ -68,6 +68,7 @@ pnpm install-skill uninstall <n>   # remove one
 
 | Skill | Adds |
 | --- | --- |
+| `app-name` | Rename the app to your own name in one pass |
 | `email-resend` | Transactional email via Resend |
 | `webhooks-svix` | Organization-scoped outbound webhooks (signed, retried, with a delivery log) |
 | `widget-embed` | An embeddable `/widget.js` (Preact, shadow DOM) backed by a public API |

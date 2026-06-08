@@ -8,6 +8,21 @@ and tested. The domain logic is yours to build on top. Read
 The example resource is **`items`** — a complete controller → service →
 repository → schema → UI → tests slice. Copy it to create your own resources.
 
+## Renaming the app
+
+The app is called **Mudhal** by default. To rename it, **do not hand-edit
+files** — run the bundled `app-name` skill, which rewrites both the display name
+and the slug (and `data-<slug>`/`--<slug>-*`/`<Slug>Widget`/`<slug>-uploads`)
+everywhere in one pass:
+
+```bash
+node skills/app-name/references/rename-app.mjs "<New Name>" [new-slug]
+```
+
+Then run `pnpm cf-typegen && pnpm typecheck && pnpm test`. See
+`skills/app-name/SKILL.md` for details and caveats (e.g. the D1 binding stays
+`DB`, so the local database is unaffected).
+
 ## Stack
 
 - **Runtime**: Cloudflare Workers — a single Worker serves both the API and the app
@@ -40,6 +55,7 @@ exact steps and reference code).
 
 Available skills:
 
+- **app-name** — rename the app to a custom name in one pass (see above)
 - **email-resend** — transactional email via Resend (plain fetch, no SDK)
 - **webhooks-svix** — org-scoped outbound webhooks (signed, retried, delivery log)
 - **widget-embed** — an embeddable Preact widget (`/widget.js`, shadow DOM) + public API
