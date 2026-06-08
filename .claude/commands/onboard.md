@@ -146,6 +146,10 @@ procedure; reference it from each phase.
   layer. Controllers never touch the DB; services never import Hono.
 - **Every repository query is scoped by `org_id`** — derive the org from the
   Clerk session, never trust the client.
+- **Authorization** goes in `app/lib/capabilities.ts` (one auditable file) and is
+  enforced with `requireCapability(can.x)`; gate on the Clerk session role, never
+  the `memberships.role` mirror. The session also exposes `c.var.userId` /
+  `c.var.user` / `c.var.membership` for attribution and per-user data.
 - Validate external input with zod at the controller edge.
 - Every layer ships a test; `tests/` mirrors `workers/api/`.
 - Side effects (email, webhooks) run in `waitUntil(...)`.

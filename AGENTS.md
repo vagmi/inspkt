@@ -30,7 +30,8 @@ Then run `pnpm cf-typegen && pnpm typecheck && pnpm test`. See
 - **App**: React Router v7 (framework mode, SSR, `v8_middleware`) via `@cloudflare/vite-plugin`
 - **API**: Hono mounted at `/api/*` in `workers/app.ts`
 - **DB**: Cloudflare D1 + Drizzle ORM (`drizzle-kit` migrations in `drizzle/migrations/`)
-- **Auth**: Clerk with Organizations (`@clerk/react-router` in the app, `@clerk/hono` in the API). The tenancy key is the Clerk `orgId`.
+- **Auth**: Clerk with Organizations (`@clerk/react-router` in the app, `@clerk/hono` in the API). The tenancy key is the Clerk `orgId`. The org, the signed-in **user**, and their **membership** (with role) are mirrored into D1 — lazily on first request and via Clerk webhooks (`organization.*`, `user.*`, `organizationMembership.*`).
+- **Authorization**: every rule lives in one auditable file, `app/lib/capabilities.ts` (`can.*` predicates over an `Actor`). Gates read the **Clerk session** (live, signed) — never the D1 `memberships.role` mirror, which can lag a webhook. Enforce with `requireCapability(can.x)` on a route and call the same `can.x(actor)` in the UI.
 - **Plans**: plan limits are config (`app/lib/plans.ts`); gates read `getPlan(plan)`
   and usage is metered in `usage_counters`. Every org is `free` until a billing
   integration moves it — **subscription billing ships as the optional
@@ -97,7 +98,11 @@ Request flow: **controller → service → repository → Drizzle/D1**. Never sk
 - Shared domain code both app and worker need (`plans.ts`, `id.ts`) lives in
   `app/lib/` and stays free of React and Hono imports.
 - Multi-tenancy: **every** repository query is scoped by `org_id`. Never trust a
-  client-supplied org id — derive it from the Clerk session (`requireOrg`).
+  client-supplied org id — derive it from the Clerk session (`requireOrg`, which
+  also sets `c.var.userId`, `c.var.user`, `c.var.orgRole`, and `c.var.membership`).
+- Authorization: gate routes with `requireCapability(can.x)` and keep every rule
+  in `app/lib/capabilities.ts`. Decide from the session role/permissions
+  (`c.var.orgRole` / Clerk's `has()`), never from the `memberships.role` mirror.
 
 ## Testing (required for every layer)
 

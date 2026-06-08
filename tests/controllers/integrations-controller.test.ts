@@ -4,10 +4,15 @@ import { domainErrorHandler } from "../../workers/api/controllers/error-handler"
 import { createIntegrationsController } from "../../workers/api/controllers/integrations-controller";
 import type { ApiEnv } from "../../workers/api/types";
 
-function makeApp(opts: { clerkOk?: boolean } = {}) {
+function makeApp(opts: { clerkOk?: boolean; event?: { type: string } } = {}) {
   const organizations = { syncFromClerk: vi.fn() };
+  const users = { syncFromClerk: vi.fn() };
+  const members = { syncFromClerk: vi.fn() };
 
-  const clerkEvent = { type: "organization.updated", data: { id: "org_1" } };
+  const clerkEvent = opts.event ?? {
+    type: "organization.updated",
+    data: { id: "org_1" },
+  };
 
   const controller = createIntegrationsController({
     clerk: (opts.clerkOk ?? true)
@@ -20,11 +25,11 @@ function makeApp(opts: { clerkOk?: boolean } = {}) {
   const app = new Hono<ApiEnv>();
   app.onError(domainErrorHandler);
   app.use(async (c, next) => {
-    c.set("services", { organizations } as never);
+    c.set("services", { organizations, users, members } as never);
     await next();
   });
   app.route("/integrations", controller);
-  return { app, organizations, clerkEvent };
+  return { app, organizations, users, members, clerkEvent };
 }
 
 const TEST_ENV = {
@@ -43,12 +48,30 @@ function post(path: string) {
   ] as const;
 }
 
-describe("integrations controller", () => {
-  it("forwards verified clerk events to the organizations service", async () => {
-    const { app, organizations, clerkEvent } = makeApp();
+describe("integrations controller — clerk dispatch", () => {
+  it("routes organization.* to the organizations service", async () => {
+    const { app, organizations, users, members, clerkEvent } = makeApp();
     const res = await app.request(...post("/integrations/clerk"));
     expect(res.status).toBe(200);
     expect(organizations.syncFromClerk).toHaveBeenCalledWith(clerkEvent);
+    expect(users.syncFromClerk).not.toHaveBeenCalled();
+    expect(members.syncFromClerk).not.toHaveBeenCalled();
+  });
+
+  it("routes user.* to the users service", async () => {
+    const event = { type: "user.created", data: { id: "user_1" } };
+    const { app, users, organizations } = makeApp({ event });
+    await app.request(...post("/integrations/clerk"));
+    expect(users.syncFromClerk).toHaveBeenCalledWith(event);
+    expect(organizations.syncFromClerk).not.toHaveBeenCalled();
+  });
+
+  it("routes organizationMembership.* to the members service (not organizations)", async () => {
+    const event = { type: "organizationMembership.created", data: {} };
+    const { app, members, organizations } = makeApp({ event });
+    await app.request(...post("/integrations/clerk"));
+    expect(members.syncFromClerk).toHaveBeenCalledWith(event);
+    expect(organizations.syncFromClerk).not.toHaveBeenCalled();
   });
 
   it("403s clerk events with bad signatures", async () => {

@@ -5,7 +5,8 @@ hard architectural decisions for you — authentication, multi-tenancy, a typed
 data layer, and subscription billing — so you start from solid engineering
 fundamentals instead of a blank page.
 
-- 🔐 **Auth & multi-tenancy** — Clerk with organizations; every record is scoped to an org
+- 🔐 **Auth & multi-tenancy** — Clerk with organizations; users, memberships & roles mirrored into D1; every record scoped to an org
+- 🛡️ **Authorization** — one auditable policy file (`app/lib/capabilities.ts`); role checks read the live Clerk session, enforced server-side and reflected in the UI
 - 🗄️ **Typed data layer** — Cloudflare D1 + Drizzle ORM with strict controller → service → repository layering and migrations
 - 💳 **Plans & limits** — plan-based gating and live usage metering built in; subscription billing (Polar) is one skill away
 - 🎨 **UI** — Tailwind v4 + shadcn/ui with a considered design system

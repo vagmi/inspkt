@@ -1,6 +1,8 @@
 import { vi } from "vitest";
 import type { Item } from "../../workers/api/repositories/items-repo";
+import type { Membership } from "../../workers/api/repositories/memberships-repo";
 import type { Organization } from "../../workers/api/repositories/organizations-repo";
+import type { User } from "../../workers/api/repositories/users-repo";
 
 export function fakeOrg(overrides: Partial<Organization> = {}): Organization {
   return {
@@ -61,5 +63,66 @@ export function mockUsageRepo() {
     getCount: vi.fn(),
     increment: vi.fn(),
     history: vi.fn(),
+  };
+}
+
+export function fakeUser(overrides: Partial<User> = {}): User {
+  return {
+    id: "user_test_1",
+    email: "user@example.com",
+    firstName: "Test",
+    lastName: "User",
+    imageUrl: null,
+    createdAt: 1_700_000_000,
+    updatedAt: 1_700_000_000,
+    ...overrides,
+  };
+}
+
+export function mockUsersRepo() {
+  return {
+    getById: vi.fn(),
+    ensure: vi.fn(),
+    upsert: vi.fn(),
+    updateFromClerk: vi.fn(),
+    delete: vi.fn(),
+  };
+}
+
+export function fakeMembership(overrides: Partial<Membership> = {}): Membership {
+  return {
+    orgId: "org_test_1",
+    userId: "user_test_1",
+    role: "org:member",
+    createdAt: 1_700_000_000,
+    updatedAt: 1_700_000_000,
+    ...overrides,
+  };
+}
+
+export function mockMembershipsRepo() {
+  return {
+    get: vi.fn(),
+    upsert: vi.fn(),
+    listByOrg: vi.fn(),
+    reconcile: vi.fn(),
+    remove: vi.fn(),
+  };
+}
+
+export function mockUsersService() {
+  return {
+    ensureUser: vi.fn(),
+    getById: vi.fn(),
+    syncFromClerk: vi.fn(),
+  };
+}
+
+export function mockMembersService() {
+  return {
+    ensureMembership: vi.fn(),
+    listMembers: vi.fn(),
+    removeMember: vi.fn(),
+    syncFromClerk: vi.fn(),
   };
 }

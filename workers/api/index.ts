@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { domainErrorHandler } from "./controllers/error-handler";
 import { createIntegrationsController } from "./controllers/integrations-controller";
 import { createItemsController } from "./controllers/items-controller";
+import { createMembersController } from "./controllers/members-controller";
 import { requireOrg } from "./middleware/auth";
 import { injectServices } from "./middleware/services";
 import type { ApiEnv } from "./types";
@@ -35,8 +36,18 @@ export function createApi() {
   authed.use(injectServices);
   authed.use(requireOrg);
 
-  authed.get("/me", (c) => c.json({ orgId: c.var.orgId, org: c.var.org }));
+  authed.get("/me", (c) =>
+    c.json({
+      orgId: c.var.orgId,
+      org: c.var.org,
+      userId: c.var.userId,
+      user: c.var.user,
+      orgRole: c.var.orgRole,
+      membership: c.var.membership,
+    }),
+  );
   authed.route("/items", createItemsController());
+  authed.route("/members", createMembersController());
 
   app.route("/", authed);
 

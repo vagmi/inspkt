@@ -34,15 +34,26 @@ and translated to HTTP by `controllers/error-handler.ts`:
 
 ## Data model
 
-Three baseline tables (`workers/api/db/schema/`):
+Baseline tables (`workers/api/db/schema/`):
 
 - **organizations** — local mirror of the Clerk org. `id` *is* the Clerk org id
   (Clerk is the identity source of truth). `plan` drives the gates and defaults
   to `free`; the optional `billing-polar` skill adds the subscription columns
   and the receiver that writes them.
+- **users** — local mirror of the Clerk user (`id` *is* the Clerk user id).
+  Global (a user can belong to many orgs). Exists so the app can FK against,
+  attribute, and display people — not for authorization.
+- **memberships** — the User ↔ Organization link with a `role`, mirroring
+  Clerk's model. PK `(org_id, user_id)`. The `role` column is a display/data
+  mirror that can lag a webhook — **never gate on it**.
 - **usage_counters** — per-org, per-month (`YYYY-MM`) metered `count`. Atomic
   upsert-increment on each metered action; one row read per limit check.
 - **items** — the example resource. Org-scoped; copy it for your own data.
+
+Users and memberships are mirrored lazily (the active user/membership on first
+request) and kept in sync by Clerk `user.*` / `organizationMembership.*`
+webhooks; the Members page additionally reconciles against the Clerk API so the
+list is always complete.
 
 Plan limits live in **config**, not the DB (`app/lib/plans.ts`): changing a
 limit is a deploy, not a migration, and gates read zero extra rows. `getPlan()`
@@ -54,9 +65,25 @@ resolves a plan; gates compare counts against it.
   `rootAuthLoader` (`app/root.tsx`). The `/app` layout loader redirects to
   `/sign-in` (no user) or `/app/select-org` (no active org).
 - The API's `requireOrg` middleware (`workers/api/middleware/auth.ts`) requires
-  a signed-in user **and** an active org, then lazily mirrors the Clerk org into
-  D1 (`ensureOrg`) — so the Clerk webhook is optional. It sets `c.var.orgId` and
-  `c.var.org`; every repository query scopes to that org id.
+  a signed-in user **and** an active org, then lazily mirrors the Clerk org,
+  user, and membership into D1 — so the Clerk webhook is optional. It sets
+  `c.var.orgId`, `c.var.org`, `c.var.userId`, `c.var.user`, `c.var.orgRole`
+  (from the session), and `c.var.membership`; every repository query scopes to
+  the org id.
+
+## Authorization
+
+All authorization rules live in one auditable file, **`app/lib/capabilities.ts`**
+— `can.*` predicates over an `Actor`. The worker middleware, the API
+controllers, and the UI all call the same predicate, so "what the server
+enforces" and "what the button shows" cannot drift.
+
+The security rule: an `Actor` is built from the **Clerk session**
+(`actorFromAuth(getAuth(...))`) — signed, live, refreshed on Clerk's cadence —
+**never** from the `memberships.role` mirror, which can lag a webhook (gating on
+a stale mirror would be a privilege-escalation bug). Gate routes with
+`requireCapability(can.x)`; for resource-scoped checks call `can.x(actor, …)`
+inside the controller.
 
 ## API surface
 
@@ -65,8 +92,10 @@ are registered **before** the authed group so they match first and never hit
 `requireOrg`:
 
 - `GET /api/health` — liveness
-- `POST /api/integrations/clerk` — org-sync webhook (signature-verified)
-- **authed** (Clerk session + active org): `GET /api/me`, `/api/items/*`
+- `POST /api/integrations/clerk` — Clerk webhook (signature-verified); dispatched
+  by event prefix to the organizations / users / members services
+- **authed** (Clerk session + active org): `GET /api/me`, `/api/items/*`,
+  `/api/members/*` (list; `DELETE` is admin-gated via `requireCapability`)
 
 Skills extend this: `billing-polar` adds `/api/billing/*` and a
 `/api/integrations/polar` receiver, `widget-embed` adds a public `/api/public/*`

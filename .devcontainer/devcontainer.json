@@ -1,0 +1,42 @@
+{
+	"name": "mudhal",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"features": {
+		"ghcr.io/devcontainers/features/github-cli:1": {}
+	},
+	"forwardPorts": [5173],
+	"portsAttributes": {
+		"5173": {
+			"label": "mudhal dev",
+			"onAutoForward": "notify"
+		}
+	},
+	"postCreateCommand": "bash .devcontainer/post-create.sh",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"anthropic.claude-code",
+				"bradlc.vscode-tailwindcss"
+			]
+		}
+	},
+	// Map Codespaces secrets straight into the container; post-create.sh
+	// writes them into .dev.vars. Configure them under
+	// Repo Settings → Secrets and variables → Codespaces.
+	"remoteEnv": {
+		"CLERK_SECRET_KEY": "${localEnv:CLERK_SECRET_KEY}",
+		"CLERK_PUBLISHABLE_KEY": "${localEnv:CLERK_PUBLISHABLE_KEY}",
+		"CLERK_WEBHOOK_SECRET": "${localEnv:CLERK_WEBHOOK_SECRET}",
+		"POLAR_ACCESS_TOKEN": "${localEnv:POLAR_ACCESS_TOKEN}",
+		"POLAR_WEBHOOK_SECRET": "${localEnv:POLAR_WEBHOOK_SECRET}",
+		"POLAR_PRO_PRODUCT_ID": "${localEnv:POLAR_PRO_PRODUCT_ID}",
+		"POLAR_BIZ_PRODUCT_ID": "${localEnv:POLAR_BIZ_PRODUCT_ID}",
+		"POLAR_SERVER": "${localEnv:POLAR_SERVER}",
+		"RESEND_API_KEY": "${localEnv:RESEND_API_KEY}",
+		"SVIX_API_KEY": "${localEnv:SVIX_API_KEY}",
+		"VITE_CLERK_PUBLISHABLE_KEY": "${localEnv:VITE_CLERK_PUBLISHABLE_KEY}",
+		"CLOUDFLARE_API_TOKEN": "${localEnv:CLOUDFLARE_API_TOKEN}"
+	}
+}

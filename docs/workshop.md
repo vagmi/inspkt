@@ -24,8 +24,10 @@ services, run it locally, build your domain on top, and ship.
    org-scoped and won't work without it.
 3. Copy the **Publishable key** and **Secret key**.
 4. (Optional) Create a webhook → endpoint `https://<your-app>/api/integrations/clerk`,
-   subscribe to `organization.*`, copy the signing secret. You can skip this —
-   orgs are mirrored lazily on first login.
+   subscribe to `organization.*`, `user.*`, and `organizationMembership.*`, copy
+   the signing secret. You can skip this — orgs, users, and the active
+   membership are mirrored lazily on first request, and the Members page
+   reconciles against the Clerk API.
 
 ### Cloudflare D1
 
@@ -62,7 +64,9 @@ pnpm doctor      # green-lights the above
 pnpm dev
 ```
 
-Sign up, create an organization, and add an item.
+Sign up, create an organization, add an item, and open **Members** (invite a
+teammate from the Clerk org switcher to see roles and the admin-only remove
+action).
 
 ## 2. Build your domain
 
