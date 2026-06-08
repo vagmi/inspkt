@@ -1,9 +1,10 @@
 # AGENTS.md — Mudhal
 
 An opinionated, production-grade foundation for SaaS applications: Clerk auth
-with organizations, Cloudflare D1 + Drizzle, and Polar billing — architected
-and tested. The domain logic is yours to build on top. Read
-`docs/architecture.md` for the full design before making structural changes.
+with organizations, Cloudflare D1 + Drizzle, and plan-based usage limits —
+architected and tested. The domain logic is yours to build on top (subscription
+billing is an optional skill — see below). Read `docs/architecture.md` for the
+full design before making structural changes.
 
 The example resource is **`items`** — a complete controller → service →
 repository → schema → UI → tests slice. Copy it to create your own resources.
@@ -30,11 +31,10 @@ Then run `pnpm cf-typegen && pnpm typecheck && pnpm test`. See
 - **API**: Hono mounted at `/api/*` in `workers/app.ts`
 - **DB**: Cloudflare D1 + Drizzle ORM (`drizzle-kit` migrations in `drizzle/migrations/`)
 - **Auth**: Clerk with Organizations (`@clerk/react-router` in the app, `@clerk/hono` in the API). The tenancy key is the Clerk `orgId`.
-- **Billing**: Polar (`@polar-sh/sdk` via `workers/api/adapters/polar.ts`). The
-  `/api/integrations/polar` receiver is the single writer of billing state;
-  checkout returns reconcile directly against the Polar API
-  (`POST /api/billing/reconcile`) so a missed webhook never strands an upgrade.
-  `POLAR_SERVER` selects sandbox/production.
+- **Plans**: plan limits are config (`app/lib/plans.ts`); gates read `getPlan(plan)`
+  and usage is metered in `usage_counters`. Every org is `free` until a billing
+  integration moves it — **subscription billing ships as the optional
+  `billing-polar` skill** (Polar checkout/portal/webhooks), not in the baseline.
 - **UI**: Tailwind v4 (CSS-config in `app/app.css`, no `tailwind.config`) + shadcn/ui
 - **Package manager**: pnpm (never npm/yarn)
 
@@ -56,6 +56,7 @@ exact steps and reference code).
 Available skills:
 
 - **app-name** — rename the app to a custom name in one pass (see above)
+- **billing-polar** — subscription billing via Polar (checkout, portal, webhooks, Billing page)
 - **email-resend** — transactional email via Resend (plain fetch, no SDK)
 - **webhooks-svix** — org-scoped outbound webhooks (signed, retried, delivery log)
 - **widget-embed** — an embeddable Preact widget (`/widget.js`, shadow DOM) + public API
@@ -146,9 +147,8 @@ point.
 - Local: `.dev.vars` (server) and `.env.local` (browser `VITE_*` Clerk keys) —
   both gitignored, **never commit secrets**. Production: `wrangler secret put`.
 - Baseline keys: `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`,
-  `CLERK_WEBHOOK_SECRET` (optional), `POLAR_ACCESS_TOKEN`,
-  `POLAR_WEBHOOK_SECRET`, `POLAR_PRO_PRODUCT_ID`, `POLAR_BIZ_PRODUCT_ID`,
-  `POLAR_SERVER`, `APP_URL`. Skills add their own.
+  `CLERK_WEBHOOK_SECRET` (optional), `APP_URL`. Skills add their own (e.g.
+  `billing-polar` adds the `POLAR_*` keys).
 - Orgs are mirrored into D1 lazily on first authenticated request, so the Clerk
   webhook is optional for local work.
 - After changing `wrangler.jsonc` bindings, run `pnpm cf-typegen`.

@@ -1,3 +1,4 @@
+// Copy to workers/api/services/billing-service.ts.
 import { getPlan, type PlanId, type PlanLimits } from "~/lib/plans";
 import { currentPeriod } from "~/lib/plans";
 import type { PolarAdapter } from "../adapters/polar";

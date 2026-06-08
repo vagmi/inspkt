@@ -48,13 +48,7 @@ const devVars = parseEnvFile(path.join(ROOT, ".dev.vars"));
 if (!devVars) {
   bad(".dev.vars is missing", "cp .dev.vars.example .dev.vars and fill it in");
 } else {
-  for (const key of [
-    "CLERK_SECRET_KEY",
-    "CLERK_PUBLISHABLE_KEY",
-    "POLAR_ACCESS_TOKEN",
-    "POLAR_PRO_PRODUCT_ID",
-    "POLAR_BIZ_PRODUCT_ID",
-  ]) {
+  for (const key of ["CLERK_SECRET_KEY", "CLERK_PUBLISHABLE_KEY"]) {
     if (isPlaceholder(devVars[key])) bad(`${key} is unset or a placeholder`);
     else ok(key);
   }

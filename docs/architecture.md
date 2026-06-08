@@ -36,9 +36,10 @@ and translated to HTTP by `controllers/error-handler.ts`:
 
 Three baseline tables (`workers/api/db/schema/`):
 
-- **organizations** — local mirror of the Clerk org + billing state. `id` *is*
-  the Clerk org id (Clerk is the identity source of truth). The Polar receiver
-  is the single writer of the billing columns.
+- **organizations** — local mirror of the Clerk org. `id` *is* the Clerk org id
+  (Clerk is the identity source of truth). `plan` drives the gates and defaults
+  to `free`; the optional `billing-polar` skill adds the subscription columns
+  and the receiver that writes them.
 - **usage_counters** — per-org, per-month (`YYYY-MM`) metered `count`. Atomic
   upsert-increment on each metered action; one row read per limit check.
 - **items** — the example resource. Org-scoped; copy it for your own data.
@@ -64,23 +65,21 @@ are registered **before** the authed group so they match first and never hit
 `requireOrg`:
 
 - `GET /api/health` — liveness
-- `POST /api/integrations/polar` — billing webhook (signature-verified)
 - `POST /api/integrations/clerk` — org-sync webhook (signature-verified)
-- **authed** (Clerk session + active org): `GET /api/me`, `/api/items/*`,
-  `/api/billing/*`
+- **authed** (Clerk session + active org): `GET /api/me`, `/api/items/*`
 
-Skills extend this: `widget-embed` adds a public `/api/public/*` group,
-`webhooks-svix` adds `/api/webhooks/*`, `r2-uploads` adds `/api/uploads`.
+Skills extend this: `billing-polar` adds `/api/billing/*` and a
+`/api/integrations/polar` receiver, `widget-embed` adds a public `/api/public/*`
+group, `webhooks-svix` adds `/api/webhooks/*`, `r2-uploads` adds `/api/uploads`.
 
-## Billing flow
+## Plans & billing
 
-1. The billing page links to `GET /api/billing/checkout?plan=pro`, which
-   redirects to a Polar checkout (org id rides along as `externalCustomerId`).
-2. On return (`?upgraded=1`) the loader calls `POST /api/billing/reconcile`,
-   which pulls the active subscription straight from Polar and applies it — so a
-   delayed/missed webhook never strands an upgrade.
-3. `POST /api/integrations/polar` is the authoritative, ongoing writer of
-   billing state.
+Plan *config* and gating are built in (`app/lib/plans.ts`, `getPlan()`, the
+`items` limit, `usage_counters`). Every org stays on `free` until a billing
+integration moves it. **Subscription billing is the optional `billing-polar`
+skill** — it adds Polar checkout (`GET /api/billing/checkout`), reconcile on
+return (`POST /api/billing/reconcile`, self-heals a missed webhook), and the
+authoritative `POST /api/integrations/polar` receiver that writes billing state.
 
 ## Testing
 

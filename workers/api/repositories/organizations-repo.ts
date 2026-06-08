@@ -5,14 +5,6 @@ import { now } from "../db/schema/helpers";
 
 export type Organization = typeof organizations.$inferSelect;
 
-export interface BillingUpdate {
-  plan?: string;
-  polarCustomerId?: string | null;
-  polarSubscriptionId?: string | null;
-  subscriptionStatus?: string | null;
-  currentPeriodEnd?: number | null;
-}
-
 export function createOrganizationsRepo(db: Db) {
   async function getById(id: string): Promise<Organization | null> {
     const [row] = await db
@@ -49,14 +41,6 @@ export function createOrganizationsRepo(db: Db) {
       await db
         .update(organizations)
         .set({ name: data.name, slug: data.slug ?? null, updatedAt: now() })
-        .where(eq(organizations.id, id));
-    },
-
-    /** Polar webhook receiver is the single writer of billing fields. */
-    async updateBilling(id: string, update: BillingUpdate): Promise<void> {
-      await db
-        .update(organizations)
-        .set({ ...update, updatedAt: now() })
         .where(eq(organizations.id, id));
     },
 

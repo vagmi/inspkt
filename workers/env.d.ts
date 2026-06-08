@@ -8,10 +8,5 @@ interface Env {
   CLERK_SECRET_KEY: string;
   CLERK_PUBLISHABLE_KEY: string;
   CLERK_WEBHOOK_SECRET: string;
-  POLAR_ACCESS_TOKEN: string;
-  POLAR_WEBHOOK_SECRET: string;
-  POLAR_PRO_PRODUCT_ID: string;
-  POLAR_BIZ_PRODUCT_ID: string;
-  POLAR_SERVER: string;
   APP_URL: string;
 }

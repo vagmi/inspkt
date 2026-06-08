@@ -1,6 +1,5 @@
 import { clerkMiddleware } from "@clerk/hono";
 import { Hono } from "hono";
-import { createBillingController } from "./controllers/billing-controller";
 import { domainErrorHandler } from "./controllers/error-handler";
 import { createIntegrationsController } from "./controllers/integrations-controller";
 import { createItemsController } from "./controllers/items-controller";
@@ -13,7 +12,8 @@ import type { ApiEnv } from "./types";
  * by React Router loaders/actions via app/lib/api-client.server.ts.
  *
  * Route groups:
- *  - /api/integrations/*   signature-verified receivers (Polar, Clerk)
+ *  - /api/integrations/*   signature-verified receivers (Clerk; the
+ *                          billing-polar skill adds the Polar receiver)
  *  - everything else       Clerk session + active org required
  *
  * REGISTRATION ORDER MATTERS: public routes and receivers must be registered
@@ -37,7 +37,6 @@ export function createApi() {
 
   authed.get("/me", (c) => c.json({ orgId: c.var.orgId, org: c.var.org }));
   authed.route("/items", createItemsController());
-  authed.route("/billing", createBillingController());
 
   app.route("/", authed);
 

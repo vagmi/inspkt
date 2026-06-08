@@ -1,3 +1,4 @@
+// Copy to workers/api/controllers/billing-controller.ts.
 import { Hono } from "hono";
 import type { ApiEnv } from "../types";
 

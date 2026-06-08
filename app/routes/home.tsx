@@ -11,7 +11,7 @@ export function meta({}: Route.MetaArgs) {
     {
       name: "description",
       content:
-        "A production-grade SaaS foundation: Clerk auth with organizations, Cloudflare D1 + Drizzle, and Polar billing — built on solid engineering fundamentals.",
+        "A production-grade SaaS foundation: Clerk auth with organizations, Cloudflare D1 + Drizzle, and plan-based usage limits — built on solid engineering fundamentals.",
     },
   ];
 }
@@ -87,7 +87,7 @@ function SpecimenSheet() {
 
         <div className="rule-perforated mt-8" />
         <p className="form-label-mono mt-3 text-muted-foreground/70">
-          Auth · Database · Billing — already wired
+          Auth · Database · Plans — already wired
         </p>
       </div>
     </div>
@@ -107,8 +107,8 @@ const FEATURES = [
   },
   {
     no: "03",
-    title: "Billing & plans",
-    body: "Polar checkout, customer portal, webhooks and plan-based usage limits — upgrade flows that actually work.",
+    title: "Plans & usage limits",
+    body: "Plan-based gating and live usage metering are built in. Add Polar checkout, the customer portal, and webhooks with the billing-polar skill.",
   },
 ] as const;
 
@@ -157,7 +157,7 @@ export default function Home() {
               className="form-label-mono animate-fade-up text-stamp"
               style={{ animationDelay: "0.05s" }}
             >
-              Auth · Database · Billing · Skills
+              Auth · Database · Plans · Skills
             </p>
             <h1
               className="animate-fade-up mt-5 text-5xl leading-[1.05] md:text-7xl"
@@ -172,7 +172,7 @@ export default function Home() {
               style={{ animationDelay: "0.3s" }}
             >
               Authentication, multi-tenancy, a typed data layer, and
-              subscription billing — architected with strong engineering
+              plan-based usage limits — architected with strong engineering
               fundamentals, ready for you to build on.
             </p>
             <div

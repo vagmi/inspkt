@@ -3,11 +3,17 @@
 A step-by-step guide from clone to a deployed application — set up the
 services, run it locally, build your domain on top, and ship.
 
+> **Prefer a guided start?** In Claude Code, run **`/onboard`**. It drives the
+> setup below to a green environment, interviews you about your app, and writes a
+> phased roadmap of deployable vertical slices to `docs/roadmap.md`. This page is
+> the manual version of the same path.
+
 ## 0. Prerequisites
 
 - Node 20+ and `pnpm` (`corepack enable`)
 - A Cloudflare account (`npx wrangler login`)
-- A Clerk account and a Polar **sandbox** account
+- A Clerk account (subscription billing is optional — add it later with the
+  `billing-polar` skill)
 
 ## 1. Setup checklist (~20 min)
 
@@ -30,15 +36,6 @@ npx wrangler d1 create mudhal
 Paste the printed `database_id` into `wrangler.jsonc` (replace
 `REPLACE_WITH_YOUR_D1_DATABASE_ID`).
 
-### Polar (sandbox)
-
-1. Sign up at https://sandbox.polar.sh.
-2. Create two **products**: "Pro" and "Business". Copy each product id.
-3. Create an **organization access token**. Copy it.
-4. (Optional) Create a webhook → `https://<your-app>/api/integrations/polar`,
-   copy the signing secret. Locally you can rely on reconcile instead:
-   `polar listen http://localhost:5173/api/integrations/polar`.
-
 ### Fill secrets
 
 ```bash
@@ -48,10 +45,13 @@ cp .env.local.example .env.local
 
 Fill in:
 
-- `.dev.vars` — `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`,
-  `POLAR_ACCESS_TOKEN`, `POLAR_PRO_PRODUCT_ID`, `POLAR_BIZ_PRODUCT_ID`,
-  `POLAR_WEBHOOK_SECRET` (optional), `POLAR_SERVER=sandbox`, `APP_URL`.
+- `.dev.vars` — `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `APP_URL`
+  (and `CLERK_WEBHOOK_SECRET` only if you wire the org-sync webhook).
 - `.env.local` — `VITE_CLERK_PUBLISHABLE_KEY` (same publishable key).
+
+> Want paid plans? Install the **billing-polar** skill (`pnpm install-skill
+> billing-polar`) — it prints the `POLAR_*` keys to add and the steps to wire up
+> checkout, the customer portal, and webhooks.
 
 ### Run
 
@@ -62,7 +62,7 @@ pnpm doctor      # green-lights the above
 pnpm dev
 ```
 
-Sign up, create an organization, add an item, open Billing, click Upgrade.
+Sign up, create an organization, and add an item.
 
 ## 2. Build your domain
 
@@ -82,12 +82,14 @@ about):
 6. Copy the tests in `tests/` and rename. Run `pnpm test`.
 
 Tip: keep gating on the plan (`getPlan(plan).maxItems`) and metering with
-`usageRepo.increment` — that's what makes Billing feel real.
+`usageRepo.increment` — the gates are live even on the free plan, and they're
+what makes the `billing-polar` skill feel real once you add paid tiers.
 
 ### Pull in features as you need them
 
 ```bash
 pnpm install-skill            # see the menu
+pnpm install-skill billing-polar   # add subscription billing (Polar)
 pnpm install-skill email-resend
 ```
 
@@ -101,22 +103,20 @@ steps and reference code.
 # one-time: push secrets to the Worker
 npx wrangler secret put CLERK_SECRET_KEY
 npx wrangler secret put CLERK_PUBLISHABLE_KEY
-npx wrangler secret put POLAR_ACCESS_TOKEN
-# ...and the rest of the keys from .dev.vars
+# ...and any other keys from .dev.vars (skills add their own)
 
 npx wrangler d1 migrations apply mudhal --remote
 pnpm deploy
 ```
 
-Set the production Clerk + Polar webhook URLs to your deployed
-`https://<app>.workers.dev/api/integrations/*` endpoints.
+Set the production Clerk webhook URL (if you use it) to your deployed
+`https://<app>.workers.dev/api/integrations/clerk` endpoint. (The `billing-polar`
+skill adds its own `/api/integrations/polar` endpoint and deploy steps.)
 
 ## Troubleshooting
 
 - **"Publishable key not valid"** — `.dev.vars` / `.env.local` still have
   placeholder keys. Run `pnpm doctor`.
 - **Loaders 500 with a D1 error** — run `pnpm db:migrate:local`.
-- **Upgrade didn't reflect** — the return path calls reconcile automatically;
-  re-open Billing, or check `POLAR_SERVER=sandbox` and the product ids.
 - **Type errors about `env.X`** — add the key to `workers/env.d.ts` (and
   `pnpm cf-typegen` after binding changes).

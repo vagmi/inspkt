@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "729f4d2a-e554-4516-9b9a-243a6cfca059",
+  "id": "8b4295e1-bb88-4dd0-96b2-c4831f3d9a0c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "organizations": {
@@ -35,34 +35,6 @@
           "notNull": true,
           "autoincrement": false,
           "default": "'free'"
-        },
-        "polar_customer_id": {
-          "name": "polar_customer_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "polar_subscription_id": {
-          "name": "polar_subscription_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "subscription_status": {
-          "name": "subscription_status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "current_period_end": {
-          "name": "current_period_end",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
         },
         "created_at": {
           "name": "created_at",

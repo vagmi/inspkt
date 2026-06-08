@@ -28,24 +28,6 @@ describe("organizations repo", () => {
     expect(org?.slug).toBe("acme-inc");
   });
 
-  it("updates billing fields", async () => {
-    const repo = createOrganizationsRepo(testDb());
-    await repo.ensure("org_abc", "Acme");
-
-    await repo.updateBilling("org_abc", {
-      plan: "pro",
-      polarCustomerId: "cus_1",
-      polarSubscriptionId: "sub_1",
-      subscriptionStatus: "active",
-      currentPeriodEnd: 1_900_000_000,
-    });
-
-    const org = await repo.getById("org_abc");
-    expect(org?.plan).toBe("pro");
-    expect(org?.polarSubscriptionId).toBe("sub_1");
-    expect(org?.subscriptionStatus).toBe("active");
-  });
-
   it("deletes", async () => {
     const repo = createOrganizationsRepo(testDb());
     await repo.ensure("org_gone", "Gone");

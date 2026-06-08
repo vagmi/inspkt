@@ -27,10 +27,7 @@ function Wordmark() {
   );
 }
 
-const NAV = [
-  { to: "/app", label: "Items", end: true },
-  { to: "/app/billing", label: "Billing", end: false },
-] as const;
+const NAV = [{ to: "/app", label: "Items", end: true }] as const;
 
 export default function AppLayout() {
   return (

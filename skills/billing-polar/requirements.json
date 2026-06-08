@@ -1,0 +1,42 @@
+{
+  "env": [
+    {
+      "name": "POLAR_ACCESS_TOKEN",
+      "example": "polar_oat_xxx",
+      "file": ".dev.vars",
+      "note": "Organization access token from your Polar (sandbox) dashboard"
+    },
+    {
+      "name": "POLAR_WEBHOOK_SECRET",
+      "example": "polar_whs_xxx",
+      "file": ".dev.vars",
+      "note": "Optional locally — reconcile-on-return covers a missed webhook"
+    },
+    {
+      "name": "POLAR_PRO_PRODUCT_ID",
+      "example": "prod_xxx",
+      "file": ".dev.vars",
+      "note": "Polar product id mapped to the 'pro' plan"
+    },
+    {
+      "name": "POLAR_BIZ_PRODUCT_ID",
+      "example": "prod_xxx",
+      "file": ".dev.vars",
+      "note": "Polar product id mapped to the 'business' plan"
+    },
+    {
+      "name": "POLAR_SERVER",
+      "example": "sandbox",
+      "file": ".dev.vars",
+      "note": "sandbox or production"
+    }
+  ],
+  "bindings": [],
+  "deps": ["@polar-sh/sdk"],
+  "commands": ["pnpm add @polar-sh/sdk", "pnpm db:generate", "pnpm db:migrate:local"],
+  "notes": [
+    "Add the five POLAR_* keys above to workers/env.d.ts so typecheck passes.",
+    "Adds four columns to the organizations table — apply the additive migration (references/organizations-schema-patch.md).",
+    "The Polar webhook receiver is the single writer of the org's billing columns."
+  ]
+}

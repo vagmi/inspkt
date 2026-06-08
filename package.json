@@ -29,7 +29,6 @@
 		"@fontsource-variable/public-sans": "^5.2.7",
 		"@fontsource/ibm-plex-mono": "^5.2.7",
 		"@hono/zod-validator": "^0.8.0",
-		"@polar-sh/sdk": "^0.48.0",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"drizzle-orm": "^0.45.2",

@@ -1,5 +1,6 @@
 // Polar billing adapter. The org's Clerk id rides along as
 // externalCustomerId + metadata.orgId so webhook events resolve back to us.
+// Copy to workers/api/adapters/polar.ts.
 import { Polar } from "@polar-sh/sdk";
 
 export function createPolarAdapter(opts: {

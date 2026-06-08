@@ -3,10 +3,6 @@ CREATE TABLE `organizations` (
 	`name` text NOT NULL,
 	`slug` text,
 	`plan` text DEFAULT 'free' NOT NULL,
-	`polar_customer_id` text,
-	`polar_subscription_id` text,
-	`subscription_status` text,
-	`current_period_end` integer,
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL
 );

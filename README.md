@@ -7,7 +7,7 @@ fundamentals instead of a blank page.
 
 - 🔐 **Auth & multi-tenancy** — Clerk with organizations; every record is scoped to an org
 - 🗄️ **Typed data layer** — Cloudflare D1 + Drizzle ORM with strict controller → service → repository layering and migrations
-- 💳 **Billing** — Polar subscriptions, checkout, customer portal, and plan-based limits
+- 💳 **Plans & limits** — plan-based gating and live usage metering built in; subscription billing (Polar) is one skill away
 - 🎨 **UI** — Tailwind v4 + shadcn/ui with a considered design system
 - ✅ **Tested** — every layer ships with a spec; full type-checking across app and worker
 
@@ -29,6 +29,10 @@ pnpm dev
 
 See **[docs/workshop.md](docs/workshop.md)** for the full setup checklist
 (Clerk app + organizations, D1, Polar products) and a step-by-step guide.
+
+**New here?** Open Claude Code and run **`/onboard`** — it walks you through
+setup to a green environment, interviews you about your app, and writes a phased
+roadmap of small, deployable vertical slices to `docs/roadmap.md`.
 
 ## Architecture
 
@@ -69,6 +73,7 @@ pnpm install-skill uninstall <n>   # remove one
 | Skill | Adds |
 | --- | --- |
 | `app-name` | Rename the app to your own name in one pass |
+| `billing-polar` | Subscription billing via Polar (checkout, portal, webhooks, Billing page) |
 | `email-resend` | Transactional email via Resend |
 | `webhooks-svix` | Organization-scoped outbound webhooks (signed, retried, with a delivery log) |
 | `widget-embed` | An embeddable `/widget.js` (Preact, shadow DOM) backed by a public API |
@@ -102,5 +107,5 @@ docs/               architecture.md + workshop.md
 
 ## Tech stack
 
-React Router v7 · Cloudflare Workers · Hono · D1 + Drizzle ORM · Clerk · Polar ·
-Tailwind v4 · shadcn/ui · Vitest · pnpm.
+React Router v7 · Cloudflare Workers · Hono · D1 + Drizzle ORM · Clerk ·
+Tailwind v4 · shadcn/ui · Vitest · pnpm. (Polar billing available as a skill.)

@@ -3,6 +3,7 @@
 .env.*
 /node_modules/
 *.tsbuildinfo
+.agents
 
 # React Router
 /.react-router/
@@ -16,6 +17,7 @@ worker-configuration.d.ts
 
 # Reference app (not part of the template)
 /references/
+slides/
 
 # Installed skills land here; the bundled library in /skills is tracked.
 .claude/skills/*

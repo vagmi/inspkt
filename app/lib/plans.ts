@@ -4,6 +4,10 @@
 // `maxItems` gates the example `items` resource; `apiCallsPerMonth` is the
 // metered usage example (see workers/api/db/schema/usage-counters.ts). Rename
 // or add fields here as you build your own app — every gate reads from PLANS.
+//
+// Out of the box every org is on "free" — the paid tiers below are config the
+// gates already honor, but moving an org onto one needs a billing integration
+// (install the `billing-polar` skill for Polar checkout/portal/webhooks).
 
 export type PlanId = "free" | "pro" | "business";
 
@@ -21,16 +25,6 @@ export const PLANS: Record<PlanId, PlanLimits> = {
 
 export function getPlan(plan: string | null | undefined): PlanLimits {
   return PLANS[(plan as PlanId) ?? "free"] ?? PLANS.free;
-}
-
-/** Polar product id → plan, resolved from env at the call site. */
-export function planForPolarProduct(
-  productId: string,
-  env: { POLAR_PRO_PRODUCT_ID?: string; POLAR_BIZ_PRODUCT_ID?: string },
-): PlanId | null {
-  if (productId === env.POLAR_PRO_PRODUCT_ID) return "pro";
-  if (productId === env.POLAR_BIZ_PRODUCT_ID) return "business";
-  return null;
 }
 
 /** Current usage period key, e.g. "2026-06". */

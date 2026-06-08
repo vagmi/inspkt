@@ -8,10 +8,6 @@ export function fakeOrg(overrides: Partial<Organization> = {}): Organization {
     name: "Test Org",
     slug: "test-org",
     plan: "free",
-    polarCustomerId: null,
-    polarSubscriptionId: null,
-    subscriptionStatus: null,
-    currentPeriodEnd: null,
     createdAt: 1_700_000_000,
     updatedAt: 1_700_000_000,
     ...overrides,
@@ -23,7 +19,6 @@ export function mockOrganizationsRepo() {
     getById: vi.fn(),
     ensure: vi.fn(),
     updateFromClerk: vi.fn(),
-    updateBilling: vi.fn(),
     delete: vi.fn(),
   };
 }
@@ -66,23 +61,5 @@ export function mockUsageRepo() {
     getCount: vi.fn(),
     increment: vi.fn(),
     history: vi.fn(),
-  };
-}
-
-export function mockPolarAdapter() {
-  return {
-    createCheckout: vi.fn(),
-    createPortalSession: vi.fn(),
-    getActiveSubscription: vi.fn(),
-  };
-}
-
-export function mockBillingService() {
-  return {
-    state: vi.fn(),
-    checkoutUrl: vi.fn(),
-    portalUrl: vi.fn(),
-    reconcile: vi.fn(),
-    handlePolarEvent: vi.fn(),
   };
 }
