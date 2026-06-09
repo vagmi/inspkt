@@ -1,8 +1,8 @@
 # Mudhal
 
 An opinionated, production-grade foundation for SaaS applications. It makes the
-hard architectural decisions for you — authentication, multi-tenancy, a typed
-data layer, and subscription billing — so you start from solid engineering
+hard architectural decisions for you (authentication, multi-tenancy, a typed
+data layer, and subscription billing). So you start from solid engineering
 fundamentals instead of a blank page.
 
 - 🔐 **Auth & multi-tenancy** — Clerk with organizations; users, memberships & roles mirrored into D1; every record scoped to an org
@@ -15,7 +15,13 @@ fundamentals instead of a blank page.
 Everything runs on a single Cloudflare Worker — React Router v7 (SSR) for the
 app and a Hono API at `/api`, sharing one codebase and one deploy.
 
-## Quick start
+## Claude Code - Quick Start
+
+Open Claude Code and run **`/onboard`** — it walks you through
+setup to a green environment, interviews you about your app, and writes a phased
+roadmap of small, deployable vertical slices to `docs/roadmap.md`.
+
+## Non-AI - Quick Start (if you prefer to do it manually)
 
 ```bash
 pnpm install
@@ -31,9 +37,6 @@ pnpm dev
 See **[docs/workshop.md](docs/workshop.md)** for the full setup checklist
 (Clerk app + organizations, D1, Polar products) and a step-by-step guide.
 
-**New here?** Open Claude Code and run **`/onboard`** — it walks you through
-setup to a green environment, interviews you about your app, and writes a phased
-roadmap of small, deployable vertical slices to `docs/roadmap.md`.
 
 ## Architecture
 

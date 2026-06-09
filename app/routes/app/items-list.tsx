@@ -17,6 +17,7 @@ import { ApiError, apiFetch } from "~/lib/api-client.server";
 import { cn } from "~/lib/utils";
 import type { Item } from "../../../workers/api/repositories/items-repo";
 import type { Organization } from "../../../workers/api/repositories/organizations-repo";
+import type { User } from "../../../workers/api/repositories/users-repo";
 import type { Route } from "./+types/items-list";
 
 export function meta() {
@@ -29,10 +30,25 @@ export function meta() {
 // (action), rendered with a dialog and per-row forms.
 export async function loader({ request }: Route.LoaderArgs) {
   const [me, itemsRes] = await Promise.all([
-    apiFetch<{ org: Organization }>(request, "/api/me"),
+    apiFetch<{ org: Organization; user: User; orgRole: string | null }>(
+      request,
+      "/api/me",
+    ),
     apiFetch<{ items: Item[] }>(request, "/api/items"),
   ]);
-  return { org: me.org, items: itemsRes.items };
+  return {
+    org: me.org,
+    user: me.user,
+    orgRole: me.orgRole,
+    items: itemsRes.items,
+  };
+}
+
+function displayName(user: User): string {
+  return (
+    [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
+    user.email
+  );
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -175,7 +191,8 @@ function NewItemDialog() {
 }
 
 export default function ItemsList({ loaderData }: Route.ComponentProps) {
-  const { org, items } = loaderData;
+  const { org, user, orgRole, items } = loaderData;
+  const role = (orgRole ?? "org:member").replace(/^org:/, "");
   return (
     <div>
       <div className="flex items-end justify-between">
@@ -184,6 +201,11 @@ export default function ItemsList({ loaderData }: Route.ComponentProps) {
             {org.name} · {org.plan} plan
           </p>
           <h1 className="mt-2 text-3xl">Items</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Signed in as{" "}
+            <span className="text-foreground">{displayName(user)}</span> ·{" "}
+            <span className="font-mono text-xs">{role}</span> of {org.name}
+          </p>
         </div>
         <NewItemDialog />
       </div>

@@ -62,16 +62,18 @@ export default function App() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  let stamp = "Error";
   let message = "Oops!";
   let details = "An unexpected error occurred.";
   let stack: string | undefined;
 
   if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error";
-    details =
-      error.status === 404
-        ? "The requested page could not be found."
-        : error.statusText || details;
+    const isNotFound = error.status === 404;
+    stamp = isNotFound ? "Not found" : `Error ${error.status}`;
+    message = isNotFound ? "404" : "Error";
+    details = isNotFound
+      ? "The requested page could not be found."
+      : error.statusText || details;
   } else if (import.meta.env.DEV && error && error instanceof Error) {
     details = error.message;
     stack = error.stack;
@@ -79,7 +81,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center gap-4 p-4 text-center">
-      <span className="stamp">Not found</span>
+      <span className="stamp">{stamp}</span>
       <h1 className="text-6xl">{message}</h1>
       <p className="text-muted-foreground">{details}</p>
       {stack && (
