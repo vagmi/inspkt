@@ -8,7 +8,7 @@ fundamentals instead of a blank page.
 - 🔐 **Auth & multi-tenancy** — Clerk with organizations; users, memberships & roles mirrored into D1; every record scoped to an org
 - 🛡️ **Authorization** — one auditable policy file (`app/lib/capabilities.ts`); role checks read the live Clerk session, enforced server-side and reflected in the UI
 - 🗄️ **Typed data layer** — Cloudflare D1 + Drizzle ORM with strict controller → service → repository layering and migrations
-- 💳 **Plans & limits** — plan-based gating and live usage metering built in; subscription billing (Polar) is one skill away
+- 💳 **Pricing Plans & limits** — tier-based gating and live usage metering built in; subscription billing (Polar) is one skill away
 - 🎨 **UI** — Tailwind v4 + shadcn/ui with a considered design system
 - ✅ **Tested** — every layer ships with a spec; full type-checking across app and worker
 
@@ -47,7 +47,7 @@ controller → service → repository → Drizzle/D1
 ```
 
 Controllers validate input and shape responses; services own business rules
-(plan gates, usage metering); repositories are the only place database queries
+(tier gates, usage metering); repositories are the only place database queries
 live, and every query is scoped to the active organization. React Router
 loaders call the same Hono API in-process, so there is exactly one API surface.
 
@@ -57,15 +57,16 @@ Read **[docs/architecture.md](docs/architecture.md)** for the full design and
 ## The example resource
 
 `items` is a complete vertical slice — schema, repository, service, controller,
-dashboard UI, and tests, including a plan-based limit and live usage metering.
+dashboard UI, and tests, including a tier-based limit and live usage metering.
 It's the reference pattern: copy it to add your own resource (duplicate the
 schema, repo, service, controller, route, and tests, then rename `item` → your
 domain object).
 
 ## Optional features (skills)
 
+The base template is designed to be lean. You can add more features by using the skills shipped with this project.
 Capabilities you may or may not need ship as installable **skills**. Installing
-one places its implementation guide and reference code into `.claude/skills/`,
+the skill places its implementation guide and reference code into `.claude/skills/`,
 ready for an AI coding agent to wire in:
 
 ```bash
