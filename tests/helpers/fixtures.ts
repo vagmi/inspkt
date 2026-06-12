@@ -36,11 +36,22 @@ export async function makeMembership(
 export async function makeItem(
   db: Db,
   orgId: string,
-  overrides: Partial<{ name: string; description: string | null }> = {},
+  overrides: Partial<{
+    name: string;
+    description: string | null;
+    category: string | null;
+    locationLat: number | null;
+    locationLng: number | null;
+    locationLabel: string | null;
+  }> = {},
 ): Promise<Item> {
   return createItemsRepo(db).create({
     orgId,
     name: overrides.name ?? "First Item",
     description: overrides.description ?? "A sample item",
+    category: overrides.category,
+    locationLat: overrides.locationLat,
+    locationLng: overrides.locationLng,
+    locationLabel: overrides.locationLabel,
   });
 }

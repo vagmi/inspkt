@@ -22,7 +22,7 @@ function Wordmark() {
       to="/app"
       className="font-heading text-lg font-semibold tracking-tight"
     >
-      Mudhal<span className="text-stamp">*</span>
+      inspkt<span className="text-stamp">*</span>
     </Link>
   );
 }

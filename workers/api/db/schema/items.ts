@@ -1,11 +1,17 @@
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  real,
+  sqliteTable,
+  text,
+} from "drizzle-orm/sqlite-core";
 import { organizations } from "./organizations";
 import { now } from "./helpers";
 
-/** Example resource. This is the copy-me template for your own data:
- * duplicate this file (e.g. `widgets.ts`), the repo, service, controller,
- * routes, and tests, then rename `item` -> your resource. Every row is
- * scoped to an org via `orgId`. */
+/** The inspectable item registry: the physical things inspections are
+ * performed against (an HVAC unit, a vehicle, a property unit, a site).
+ * Carries a registered location so captured inspection locations can be
+ * compared against it. Every row is scoped to an org via `orgId`. */
 export const items = sqliteTable(
   "items",
   {
@@ -15,6 +21,10 @@ export const items = sqliteTable(
       .references(() => organizations.id),
     name: text("name").notNull(),
     description: text("description"),
+    category: text("category"),
+    locationLat: real("location_lat"),
+    locationLng: real("location_lng"),
+    locationLabel: text("location_label"),
     createdAt: integer("created_at").notNull().$defaultFn(now),
     updatedAt: integer("updated_at").notNull().$defaultFn(now),
   },

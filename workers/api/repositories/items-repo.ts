@@ -14,11 +14,19 @@ export interface ItemCreate {
   orgId: string;
   name: string;
   description?: string | null;
+  category?: string | null;
+  locationLat?: number | null;
+  locationLng?: number | null;
+  locationLabel?: string | null;
 }
 
 export interface ItemUpdate {
   name?: string;
   description?: string | null;
+  category?: string | null;
+  locationLat?: number | null;
+  locationLng?: number | null;
+  locationLabel?: string | null;
 }
 
 export function createItemsRepo(db: Db) {
@@ -31,6 +39,10 @@ export function createItemsRepo(db: Db) {
           orgId: input.orgId,
           name: input.name,
           description: input.description ?? null,
+          category: input.category ?? null,
+          locationLat: input.locationLat ?? null,
+          locationLng: input.locationLng ?? null,
+          locationLabel: input.locationLabel ?? null,
         })
         .returning();
       return row;
@@ -69,6 +81,11 @@ export function createItemsRepo(db: Db) {
       const set: Partial<typeof items.$inferInsert> = { updatedAt: now() };
       if (patch.name !== undefined) set.name = patch.name;
       if (patch.description !== undefined) set.description = patch.description;
+      if (patch.category !== undefined) set.category = patch.category;
+      if (patch.locationLat !== undefined) set.locationLat = patch.locationLat;
+      if (patch.locationLng !== undefined) set.locationLng = patch.locationLng;
+      if (patch.locationLabel !== undefined)
+        set.locationLabel = patch.locationLabel;
 
       const [row] = await db
         .update(items)

@@ -1,4 +1,4 @@
-# AGENTS.md — Mudhal
+# AGENTS.md — inspkt
 
 An opinionated, production-grade foundation for SaaS applications: Clerk auth
 with organizations, Cloudflare D1 + Drizzle, and plan-based usage limits —
@@ -11,7 +11,7 @@ repository → schema → UI → tests slice. Copy it to create your own resourc
 
 ## Renaming the app
 
-The app is called **Mudhal** by default. To rename it, **do not hand-edit
+The app is called **inspkt** by default. To rename it, **do not hand-edit
 files** — run the bundled `app-name` skill, which rewrites both the display name
 and the slug (and `data-<slug>`/`--<slug>-*`/`<Slug>Widget`/`<slug>-uploads`)
 everywhere in one pass:
@@ -134,7 +134,7 @@ point.
 - shadcn/ui components in `app/components/ui/` (alias `~/components/ui`); add
   more with `pnpm dlx shadcn@latest add <component>`.
 - Clerk components are themed via `clerkAppearance` in `app/root.tsx`.
-- The wordmark is `Mudhal*` — keep it in one place per page so renames are cheap.
+- The wordmark is `inspkt*` — keep it in one place per page so renames are cheap.
 
 ## Conventions
 

@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "mudhal",
+	"name": "inspkt",
 	"compatibility_date": "2026-06-05",
 	"main": "./workers/app.ts",
 	"observability": {
@@ -17,9 +17,9 @@
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_name": "mudhal",
-			// Replace with the id from `npx wrangler d1 create mudhal`
-			"database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID",
+			"database_name": "inspkt",
+			// Replace with the id from `npx wrangler d1 create inspkt`
+			"database_id": "426c979b-f9b7-4ba2-aa4d-88b362477d0f",
 			"migrations_dir": "drizzle/migrations"
 		}
 	]
@@ -31,8 +31,8 @@
 	// "assets": { "directory": "./public/", "binding": "ASSETS" }
 	/**
 	 * R2 bucket — uncomment when you install the `r2-uploads` skill.
-	 * Create it first: npx wrangler r2 bucket create mudhal-uploads
+	 * Create it first: npx wrangler r2 bucket create inspkt-uploads
 	 * https://developers.cloudflare.com/r2/
 	 */
-	// "r2_buckets": [ { "binding": "UPLOADS", "bucket_name": "mudhal-uploads" } ]
+	// "r2_buckets": [ { "binding": "UPLOADS", "bucket_name": "inspkt-uploads" } ]
 }

@@ -1,5 +1,10 @@
 import { currentPeriod, getPlan } from "~/lib/plans";
-import type { Item, ItemsRepo } from "../repositories/items-repo";
+import type {
+  Item,
+  ItemCreate,
+  ItemsRepo,
+  ItemUpdate,
+} from "../repositories/items-repo";
 import type { UsageRepo } from "../repositories/usage-repo";
 import { NotFoundError, PlanLimitError } from "./errors";
 
@@ -31,7 +36,7 @@ export function createItemsService({ itemsRepo, usageRepo }: ItemsServiceDeps) {
     async create(
       orgId: string,
       plan: string,
-      input: { name: string; description?: string | null },
+      input: Omit<ItemCreate, "orgId">,
     ): Promise<Item> {
       const limits = getPlan(plan);
       const count = await itemsRepo.countByOrg(orgId);
@@ -44,16 +49,16 @@ export function createItemsService({ itemsRepo, usageRepo }: ItemsServiceDeps) {
         orgId,
         name: input.name,
         description: input.description ?? null,
+        category: input.category ?? null,
+        locationLat: input.locationLat ?? null,
+        locationLng: input.locationLng ?? null,
+        locationLabel: input.locationLabel ?? null,
       });
       await usageRepo.increment(orgId, currentPeriod());
       return item;
     },
 
-    async update(
-      orgId: string,
-      id: string,
-      patch: { name?: string; description?: string | null },
-    ): Promise<Item> {
+    async update(orgId: string, id: string, patch: ItemUpdate): Promise<Item> {
       const updated = await itemsRepo.update(orgId, id, patch);
       if (!updated) throw new NotFoundError(`item ${id} not found`);
       return updated;

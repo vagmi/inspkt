@@ -16,7 +16,7 @@ import type { MemberView } from "../../../workers/api/repositories/memberships-r
 import type { Route } from "./+types/members";
 
 export function meta() {
-  return [{ title: "Members — Mudhal" }];
+  return [{ title: "Members — inspkt" }];
 }
 
 export async function loader(args: Route.LoaderArgs) {

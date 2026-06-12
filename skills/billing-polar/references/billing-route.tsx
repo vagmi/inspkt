@@ -10,7 +10,7 @@ import type { BillingState } from "../../../workers/api/services/billing-service
 import type { Route } from "./+types/billing";
 
 export function meta() {
-  return [{ title: "Billing — Mudhal" }];
+  return [{ title: "Billing — inspkt" }];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {

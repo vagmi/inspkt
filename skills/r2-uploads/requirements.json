@@ -11,12 +11,12 @@
     {
       "type": "r2_bucket",
       "binding": "UPLOADS",
-      "snippet": "\"r2_buckets\": [{ \"binding\": \"UPLOADS\", \"bucket_name\": \"mudhal-uploads\" }]"
+      "snippet": "\"r2_buckets\": [{ \"binding\": \"UPLOADS\", \"bucket_name\": \"inspkt-uploads\" }]"
     }
   ],
   "deps": [],
   "commands": [
-    "npx wrangler r2 bucket create mudhal-uploads",
+    "npx wrangler r2 bucket create inspkt-uploads",
     "pnpm cf-typegen"
   ],
   "notes": [

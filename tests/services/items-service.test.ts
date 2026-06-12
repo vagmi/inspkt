@@ -28,8 +28,36 @@ describe("items service", () => {
         orgId: ORG,
         name: "Widget",
         description: null,
+        category: null,
+        locationLat: null,
+        locationLng: null,
+        locationLabel: null,
       });
       expect(usageRepo.increment).toHaveBeenCalledWith(ORG, expect.any(String));
+    });
+
+    it("passes category and registered location through to the repo", async () => {
+      const { service, itemsRepo } = makeService();
+      itemsRepo.countByOrg.mockResolvedValue(0);
+      itemsRepo.create.mockResolvedValue(fakeItem());
+
+      await service.create(ORG, "free", {
+        name: "Rooftop HVAC",
+        category: "HVAC",
+        locationLat: 12.9716,
+        locationLng: 77.5946,
+        locationLabel: "Building A roof",
+      });
+
+      expect(itemsRepo.create).toHaveBeenCalledWith({
+        orgId: ORG,
+        name: "Rooftop HVAC",
+        description: null,
+        category: "HVAC",
+        locationLat: 12.9716,
+        locationLng: 77.5946,
+        locationLabel: "Building A roof",
+      });
     });
 
     it("rejects with PlanLimitError at the free-tier cap", async () => {

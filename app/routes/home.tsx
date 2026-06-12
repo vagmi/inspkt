@@ -7,7 +7,7 @@ import type { Route } from "./+types/home";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Mudhal — an opinionated foundation for SaaS" },
+    { title: "inspkt — an opinionated foundation for SaaS" },
     {
       name: "description",
       content:
@@ -41,7 +41,7 @@ function HeaderNav() {
 function Wordmark() {
   return (
     <span className="font-heading text-xl font-semibold tracking-tight">
-      Mudhal<span className="text-stamp">*</span>
+      inspkt<span className="text-stamp">*</span>
     </span>
   );
 }

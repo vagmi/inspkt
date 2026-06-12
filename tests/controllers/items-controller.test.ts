@@ -61,6 +61,26 @@ describe("items controller", () => {
     expect(items.create).not.toHaveBeenCalled();
   });
 
+  it("POST /items rejects an out-of-range latitude", async () => {
+    const { app, items } = makeApp();
+    const res = await app.request(
+      "/items",
+      json({ name: "Pole", locationLat: 91, locationLng: 0 }),
+    );
+    expect(res.status).toBe(400);
+    expect(items.create).not.toHaveBeenCalled();
+  });
+
+  it("POST /items rejects a latitude without a longitude", async () => {
+    const { app, items } = makeApp();
+    const res = await app.request(
+      "/items",
+      json({ name: "Half a point", locationLat: 12.97 }),
+    );
+    expect(res.status).toBe(400);
+    expect(items.create).not.toHaveBeenCalled();
+  });
+
   it("POST /items maps PlanLimitError to 402", async () => {
     const { app, items } = makeApp();
     items.create.mockRejectedValue(new PlanLimitError("cap reached"));

@@ -8,6 +8,13 @@
       "when": 1780950171860,
       "tag": "0000_bizarre_star_brand",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1781265294888,
+      "tag": "0001_striped_diamondback",
+      "breakpoints": true
     }
   ]
 }

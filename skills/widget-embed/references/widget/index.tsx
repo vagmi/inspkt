@@ -1,5 +1,5 @@
-// Mudhal embeddable widget. Usage on any site:
-//   <div data-mudhal="ITEM_ID"></div>
+// inspkt embeddable widget. Usage on any site:
+//   <div data-inspkt="ITEM_ID"></div>
 //   <script src="https://<app-host>/widget.js" async></script>
 // Renders each tagged element in an isolated shadow root.
 import { h, render } from "preact";
@@ -19,10 +19,10 @@ const SCRIPT_SRC =
 const BASE = apiBase(SCRIPT_SRC);
 
 async function mount(el: HTMLElement) {
-  if (el.dataset.mudhalMounted) return;
-  el.dataset.mudhalMounted = "1";
+  if (el.dataset.inspktMounted) return;
+  el.dataset.inspktMounted = "1";
 
-  const id = el.dataset.mudhal;
+  const id = el.dataset.inspkt;
   if (!id) return;
 
   const shadow = el.attachShadow({ mode: "open" });
@@ -39,14 +39,14 @@ async function mount(el: HTMLElement) {
     root.innerHTML = "";
     render(h(EmbedView, { item }), root);
   } catch (err) {
-    console.error("[mudhal] failed to load", id, err);
+    console.error("[inspkt] failed to load", id, err);
     root.innerHTML = "";
   }
 }
 
 function scan() {
   document
-    .querySelectorAll<HTMLElement>("[data-mudhal]")
+    .querySelectorAll<HTMLElement>("[data-inspkt]")
     .forEach((el) => void mount(el));
 }
 

@@ -21,7 +21,7 @@ export default defineConfig({
     lib: {
       entry: path.resolve(__dirname, "widget/index.tsx"),
       formats: ["iife"],
-      name: "MudhalWidget",
+      name: "inspktWidget",
       fileName: () => "widget.js",
     },
     outDir: "public",

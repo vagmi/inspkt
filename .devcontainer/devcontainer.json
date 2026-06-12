@@ -1,5 +1,5 @@
 {
-	"name": "mudhal",
+	"name": "inspkt",
 	"build": {
 		"dockerfile": "Dockerfile"
 	},
@@ -9,7 +9,7 @@
 	"forwardPorts": [5173],
 	"portsAttributes": {
 		"5173": {
-			"label": "mudhal dev",
+			"label": "inspkt dev",
 			"onAutoForward": "notify"
 		}
 	},

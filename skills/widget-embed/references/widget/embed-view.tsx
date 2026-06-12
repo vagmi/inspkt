@@ -6,7 +6,7 @@ import type { PublicItem } from "./api";
 export function EmbedView({ item }: { item: PublicItem }) {
   return (
     <div class="card">
-      <p class="kicker">Mudhal widget</p>
+      <p class="kicker">inspkt widget</p>
       <h3 class="title">{item.name}</h3>
       {item.description ? <p class="body">{item.description}</p> : null}
     </div>

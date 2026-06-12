@@ -39,6 +39,42 @@ describe("items repo", () => {
     expect(await repo.countByOrg("org_list_b")).toBe(1);
   });
 
+  it("persists registry fields: category and registered location", async () => {
+    const db = testDb();
+    const repo = createItemsRepo(db);
+    await makeOrg(db);
+    const item = await makeItem(db, "org_test_1", {
+      category: "HVAC",
+      locationLat: 12.9716,
+      locationLng: 77.5946,
+      locationLabel: "Building A roof",
+    });
+
+    const found = await repo.getById("org_test_1", item.id);
+    expect(found?.category).toBe("HVAC");
+    expect(found?.locationLat).toBeCloseTo(12.9716);
+    expect(found?.locationLng).toBeCloseTo(77.5946);
+    expect(found?.locationLabel).toBe("Building A roof");
+  });
+
+  it("can clear the location on update", async () => {
+    const db = testDb();
+    const repo = createItemsRepo(db);
+    await makeOrg(db);
+    const item = await makeItem(db, "org_test_1", {
+      locationLat: 12.9716,
+      locationLng: 77.5946,
+    });
+
+    const updated = await repo.update("org_test_1", item.id, {
+      locationLat: null,
+      locationLng: null,
+    });
+    expect(updated?.locationLat).toBeNull();
+    expect(updated?.locationLng).toBeNull();
+    expect(updated?.name).toBe("First Item");
+  });
+
   it("applies partial updates and leaves other fields intact", async () => {
     const db = testDb();
     const repo = createItemsRepo(db);
