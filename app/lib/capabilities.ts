@@ -1,88 +1,106 @@
 // ─────────────────────────────────────────────────────────────────────────
 // CAPABILITIES — the single source of truth for "who is allowed to do what".
 //
-// Every authorization rule in the app lives here as a pure predicate over an
-// `Actor`. Keeping the whole policy in one auditable file is deliberate: you (or
-// a coding agent) can read the entire permission surface at a glance, and the
-// worker middleware, the API controllers, and the UI all call the SAME function
-// — so a check can never drift between "what the server enforces" and "what the
-// button shows".
+// AUTHORIZATION IS OWNED BY THE APP, NOT THE IDENTITY PROVIDER.
+// Clerk (or Cognito/Keycloak later) answers only "who is this and which org is
+// active" — authentication + identity. The *role* a user holds in an org, and
+// every "can they do X" decision, lives here and in our own database
+// (`memberships.role`). Swapping identity providers means re-pointing where
+// `userId` / `orgId` come from; this policy file and the role model stay put.
 //
-// SECURITY RULE: an Actor is built from the CLERK SESSION (signed, live,
-// refreshed on Clerk's cadence) — never from the D1 membership mirror, which can
-// lag a webhook. Gating on a stale mirror would be a privilege-escalation bug.
-// Build actors with `actorFromAuth(getAuth(...))` only.
+// Because the role is stored in OUR D1 (read fresh in the same request), there
+// is no provider-webhook lag to worry about — `memberships.role` is the
+// authority. (This inverts the old rule that gated on the Clerk session and
+// treated the mirror as untrusted: the mirror is now the source of truth,
+// seeded once from the provider at membership creation, then app-managed.)
+//
+// Every rule is a pure predicate over an `Actor` so the worker middleware, the
+// API controllers, and the UI all call the SAME function — a check can never
+// drift between what the server enforces and what the UI shows.
 //
 // HOW TO ADD A CAPABILITY:
-//   1. Add a predicate to `can` below (uncomment a template or write a new one).
-//   2. Enforce it server-side: `requireCapability(can.yourThing)` on the route,
-//      or call `can.yourThing(actor, ...)` inside the controller for
-//      resource-scoped checks.
-//   3. Reflect it in the UI: call the same `can.yourThing(actor, ...)` to show
-//      or hide the control.
+//   1. Add a predicate to `can` below.
+//   2. Enforce it server-side: `requireCapability(can.yourThing)` on the route.
+//   3. Reflect it in the UI with the same `can.yourThing(actor)`.
 //   4. Add a case to tests/lib/capabilities.test.ts.
 // ─────────────────────────────────────────────────────────────────────────
 
-/** A single role/permission check — exactly one of the two, matching Clerk's
- * `has()` (which is a discriminated union, not "both optional"). */
-export type CapabilityCheck = { role: string } | { permission: string };
+/** The roles inspkt understands, most to least privileged. Stored verbatim in
+ * `memberships.role`. */
+export type AppRole = "admin" | "manager" | "inspector";
 
-/** The acting user, derived from the Clerk session. `has` is Clerk's session
- * check — it understands both roles and fine-grained permissions. */
+export const APP_ROLES: readonly AppRole[] = ["admin", "manager", "inspector"];
+
+export function isAppRole(value: string | null | undefined): value is AppRole {
+  return value != null && (APP_ROLES as readonly string[]).includes(value);
+}
+
+/** The acting user, reduced to the one thing authorization depends on: their
+ * app role in the active org. `null` means "no membership / unknown role" → can
+ * do nothing. */
 export interface Actor {
-  /** Clerk org role from the session, e.g. "org:admin" | "org:member". */
-  orgRole: string | null;
-  /** Clerk's session predicate. Returns false for an unauthenticated actor. */
-  has: (params: CapabilityCheck) => boolean;
+  role: AppRole | null;
 }
 
-/** Build an Actor from a Clerk auth object (`getAuth(c)` in the worker,
- * `getAuth(args)` in a loader). Tolerant of null so an unauthenticated caller
- * simply can do nothing. */
-export function actorFromAuth(
-  auth:
-    | { orgRole?: string | null; has?: (params: CapabilityCheck) => boolean }
-    | null
-    | undefined,
-): Actor {
-  return {
-    orgRole: auth?.orgRole ?? null,
-    has: auth?.has ?? (() => false),
-  };
+/** Build an Actor from a role string read out of our own database
+ * (`c.var.role` in the worker, `me.role` in a loader). Unknown/missing → no
+ * access. This is the ONLY constructor — there is intentionally no
+ * `actorFromAuth`, so nothing can accidentally authorize off the provider. */
+export function actorFromRole(role: string | null | undefined): Actor {
+  return { role: isAppRole(role) ? role : null };
 }
 
-const isAdmin = (actor: Actor): boolean => actor.has({ role: "org:admin" });
+const is = (actor: Actor, ...roles: AppRole[]): boolean =>
+  actor.role != null && roles.includes(actor.role);
 
 /**
- * The authorization policy. Each entry is a pure predicate — no I/O, no Clerk
- * imports — so it's trivially testable and callable from anywhere.
+ * The authorization policy. Pure predicates — no I/O, no provider imports.
+ *
+ * Role summary:
+ *   admin     — sets up the instance, manages members + roles, everything below
+ *   manager   — oversees: manages clients/facilities/equipment/forms, assigns
+ *   inspector — performs the inspections assigned to them
  */
 export const can = {
-  /** Any member of the active org can view the member list. */
-  viewMembers: (_actor: Actor): boolean => true,
+  /** Any member can perform inspections assigned to them. */
+  inspect: (a: Actor): boolean => is(a, "admin", "manager", "inspector"),
 
-  /** Only org admins can remove a member. */
-  removeMember: (actor: Actor): boolean => isAdmin(actor),
+  /** Any member can see who else is in the org. */
+  viewMembers: (a: Actor): boolean => is(a, "admin", "manager", "inspector"),
 
-  // ── Templates — uncomment and adapt as your app grows. Keep EVERY rule here
-  // ── so the whole policy stays auditable in one file. ──────────────────────
-  //
-  // /** Only admins can change another member's role. */
-  // changeMemberRole: (actor: Actor): boolean => isAdmin(actor),
-  //
-  // /** Only admins can rename or delete the organization. */
-  // manageOrganization: (actor: Actor): boolean => isAdmin(actor),
-  //
-  // /** Gate on a fine-grained Clerk permission instead of a role. Define the
-  //  *  permission in the Clerk dashboard, then check it here. */
-  // manageBilling: (actor: Actor): boolean =>
-  //   actor.has({ permission: "org:billing:manage" }),
-  //
-  // /** Resource-scoped example: the creator or any admin may delete an item.
-  //  *  Pass the resource + the acting user id as extra args. */
-  // deleteItem: (
-  //   actor: Actor,
-  //   item: { createdBy: string },
-  //   userId: string,
-  // ): boolean => isAdmin(actor) || item.createdBy === userId,
+  /** Manage the setup data: clients, facilities, equipment, forms. */
+  setup: (a: Actor): boolean => is(a, "admin", "manager"),
+
+  /** Assign inspections to inspectors (Phase 10). */
+  assign: (a: Actor): boolean => is(a, "admin", "manager"),
+
+  /** See oversight views: dashboards, reports across the org. */
+  oversee: (a: Actor): boolean => is(a, "admin", "manager"),
+
+  /** Change another member's role. Admins only. */
+  manageRoles: (a: Actor): boolean => is(a, "admin"),
+
+  /** Remove a member from the org. Admins only. */
+  removeMember: (a: Actor): boolean => is(a, "admin"),
+
+  /** Rename or delete the organization. Admins only. */
+  manageOrg: (a: Actor): boolean => is(a, "admin"),
 };
+
+/** Where to send a user after sign-in, by role. Managers/admins land on the
+ * setup side; inspectors go straight to their work. */
+export function landingPath(actor: Actor): string {
+  return can.setup(actor) ? "/app" : "/app/inspections";
+}
+
+// ── Provider seam ──────────────────────────────────────────────────────────
+// The ONE place that maps an identity provider's notion of role to ours. Used
+// only to seed a brand-new membership row (the org creator is the provider's
+// admin → our admin; everyone else starts as an inspector and is promoted
+// in-app). After seeding, the app owns the role and never reads this again.
+// To swap providers, change just this function.
+export function seedRoleFromProvider(
+  providerRole: string | null | undefined,
+): AppRole {
+  return providerRole === "org:admin" ? "admin" : "inspector";
+}

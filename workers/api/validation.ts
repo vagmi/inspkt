@@ -160,3 +160,11 @@ export const inspectionSaveSchema = z.object({
 
 export type InspectionCreateInput = z.infer<typeof inspectionCreateSchema>;
 export type InspectionSaveInput = z.infer<typeof inspectionSaveSchema>;
+
+// ---- Members ----------------------------------------------------------
+
+export const memberRoleSchema = z.object({
+  role: z.enum(["admin", "manager", "inspector"]),
+});
+
+export type MemberRoleInput = z.infer<typeof memberRoleSchema>;

@@ -224,7 +224,7 @@ export function fakeMembership(overrides: Partial<Membership> = {}): Membership 
   return {
     orgId: "org_test_1",
     userId: "user_test_1",
-    role: "org:member",
+    role: "admin",
     createdAt: 1_700_000_000,
     updatedAt: 1_700_000_000,
     ...overrides,
@@ -234,7 +234,9 @@ export function fakeMembership(overrides: Partial<Membership> = {}): Membership 
 export function mockMembershipsRepo() {
   return {
     get: vi.fn(),
-    upsert: vi.fn(),
+    ensureExists: vi.fn(),
+    setRole: vi.fn(),
+    countByRole: vi.fn(),
     listByOrg: vi.fn(),
     reconcile: vi.fn(),
     remove: vi.fn(),
@@ -253,6 +255,7 @@ export function mockMembersService() {
   return {
     ensureMembership: vi.fn(),
     listMembers: vi.fn(),
+    setMemberRole: vi.fn(),
     removeMember: vi.fn(),
     syncFromClerk: vi.fn(),
   };

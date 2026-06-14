@@ -65,19 +65,30 @@ in Phase 9.
 `zodResolver` for create/edit and `<DataTable>` for lists. Existing hand-coded
 screens (items, forms, capture) migrate opportunistically, not in a big-bang.
 
-### [ ] Phase 5 — Roles & access modes
+### [x] Phase 5 — Roles & access modes (app-owned authorization)
 **Goal:** Admin / Manager / Inspector roles, and an app that shows the right
 mode to each.
-**Prereq (you):** in the Clerk dashboard, add the custom org roles
-`org:manager` and `org:inspector` (org:admin exists). 
-**Slice:** expand `app/lib/capabilities.ts` with `can.setup` (admin),
-`can.assign` / `can.manage` (admin+manager), `can.inspect` (all) — gate on the
-Clerk **session** role, never the membership mirror → enforce with
-`requireCapability` on every setup/assign route → role-aware nav + a
-role-aware `/app` landing (admin/manager → setup dashboard; inspector → "my
-inspections"). 
-**Done when:** an inspector signing in sees only inspector mode; an admin sees
-setup; capabilities unit-tested; deploys.
+**Architecture decision (2026-06-14):** authorization is **owned by the app**,
+not the identity provider. Clerk is treated purely as IAM (authentication +
+org context); the role and every capability live in our DB + code. This keeps
+the door open to swapping Clerk for Cognito/Keycloak later — only the
+auth/identity seam moves, not the authz model.
+**Shipped:**
+- `app/lib/capabilities.ts` rewritten: `Actor` is built from our app role
+  (admin/manager/inspector) via `actorFromRole`; `can.{inspect,viewMembers,
+  setup,assign,oversee,manageRoles,removeMember,manageOrg}`. The ONE provider
+  touch-point is `seedRoleFromProvider()`.
+- `memberships.role` is now the **authoritative** authz source (was a mirror).
+  Seeded once from the provider at row creation, then changed only by an admin;
+  provider webhooks/reconcile never overwrite it. Migration `0004` remapped
+  existing `org:admin`→`admin`, else `inspector`.
+- `requireOrg` sets `c.var.role`; `requireCapability` reads it. Setup writes
+  (items, forms) gated with `can.setup`; admin role management via
+  `PATCH /api/members/:id/role` (last-admin guard).
+- Role-aware nav + landing: inspectors see only Inspections/Members and land on
+  `/app/inspections`; admins/managers see setup. Members screen lets an admin
+  change roles.
+- 133 tests green; deployed.
 
 ### [ ] Phase 6 — Clients
 **Goal:** admins/managers onboard the customers the org inspects for.

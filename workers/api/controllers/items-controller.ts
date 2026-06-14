@@ -1,12 +1,13 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { can } from "~/lib/capabilities";
+import { requireCapability } from "../middleware/auth";
 import type { ApiEnv } from "../types";
 import { itemCreateSchema, itemUpdateSchema } from "../validation";
 
 /** /api/items — CRUD. Mounted inside the authed group, so
- * c.var.{orgId,org,services} are always present. Controllers stay thin:
- * validate input, call a service, shape the JSON response. Copy this file
- * when you add your own resource. */
+ * c.var.{orgId,org,services} are always present. Reads are open to any member;
+ * writes are setup actions (admin/manager) gated by can.setup. */
 export function createItemsController() {
   const app = new Hono<ApiEnv>();
 
@@ -15,7 +16,11 @@ export function createItemsController() {
     return c.json({ items });
   });
 
-  app.post("/", zValidator("json", itemCreateSchema), async (c) => {
+  app.post(
+    "/",
+    requireCapability(can.setup),
+    zValidator("json", itemCreateSchema),
+    async (c) => {
     const input = c.req.valid("json");
     const item = await c.var.services.items.create(
       c.var.orgId,
@@ -30,16 +35,21 @@ export function createItemsController() {
     return c.json({ item });
   });
 
-  app.patch("/:id", zValidator("json", itemUpdateSchema), async (c) => {
-    const item = await c.var.services.items.update(
-      c.var.orgId,
-      c.req.param("id"),
-      c.req.valid("json"),
-    );
-    return c.json({ item });
-  });
+  app.patch(
+    "/:id",
+    requireCapability(can.setup),
+    zValidator("json", itemUpdateSchema),
+    async (c) => {
+      const item = await c.var.services.items.update(
+        c.var.orgId,
+        c.req.param("id"),
+        c.req.valid("json"),
+      );
+      return c.json({ item });
+    },
+  );
 
-  app.delete("/:id", async (c) => {
+  app.delete("/:id", requireCapability(can.setup), async (c) => {
     await c.var.services.items.delete(c.var.orgId, c.req.param("id"));
     return c.json({ ok: true });
   });

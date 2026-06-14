@@ -17,6 +17,7 @@ function makeApp(forms = mockFormsService()) {
   app.use(async (c, next) => {
     c.set("orgId", "org_test_1");
     c.set("org", fakeOrg());
+    c.set("role", "admin"); // can.setup — writes are admin/manager gated
     c.set("services", { forms } as never);
     await next();
   });

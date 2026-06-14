@@ -1,5 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { can } from "~/lib/capabilities";
+import { requireCapability } from "../middleware/auth";
 import type { ApiEnv } from "../types";
 import { formCreateSchema, formUpdateSchema } from "../validation";
 
@@ -14,29 +16,39 @@ export function createFormsController() {
     return c.json({ forms });
   });
 
-  app.post("/", zValidator("json", formCreateSchema), async (c) => {
-    const form = await c.var.services.forms.create(
-      c.var.orgId,
-      c.req.valid("json"),
-    );
-    return c.json({ form }, 201);
-  });
+  app.post(
+    "/",
+    requireCapability(can.setup),
+    zValidator("json", formCreateSchema),
+    async (c) => {
+      const form = await c.var.services.forms.create(
+        c.var.orgId,
+        c.req.valid("json"),
+      );
+      return c.json({ form }, 201);
+    },
+  );
 
   app.get("/:id", async (c) => {
     const form = await c.var.services.forms.get(c.var.orgId, c.req.param("id"));
     return c.json({ form });
   });
 
-  app.patch("/:id", zValidator("json", formUpdateSchema), async (c) => {
-    const form = await c.var.services.forms.update(
-      c.var.orgId,
-      c.req.param("id"),
-      c.req.valid("json"),
-    );
-    return c.json({ form });
-  });
+  app.patch(
+    "/:id",
+    requireCapability(can.setup),
+    zValidator("json", formUpdateSchema),
+    async (c) => {
+      const form = await c.var.services.forms.update(
+        c.var.orgId,
+        c.req.param("id"),
+        c.req.valid("json"),
+      );
+      return c.json({ form });
+    },
+  );
 
-  app.delete("/:id", async (c) => {
+  app.delete("/:id", requireCapability(can.setup), async (c) => {
     await c.var.services.forms.delete(c.var.orgId, c.req.param("id"));
     return c.json({ ok: true });
   });

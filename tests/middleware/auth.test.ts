@@ -13,7 +13,6 @@ interface StubAuth {
   userId?: string | null;
   orgId?: string | null;
   orgRole?: string | null;
-  has?: (p: { role?: string; permission?: string }) => boolean;
 }
 
 /** Mimics what @clerk/hono's clerkMiddleware sets on the context. */
@@ -32,10 +31,12 @@ function stubClerk(auth: StubAuth | null) {
   });
 }
 
-function makeApp(auth: StubAuth | null) {
+function makeApp(auth: StubAuth | null, membershipRole = "admin") {
   const ensureOrg = vi.fn().mockResolvedValue(fakeOrg());
   const ensureUser = vi.fn().mockResolvedValue(fakeUser());
-  const ensureMembership = vi.fn().mockResolvedValue(fakeMembership());
+  const ensureMembership = vi
+    .fn()
+    .mockResolvedValue(fakeMembership({ role: membershipRole }));
 
   const app = new Hono<ApiEnv>();
   app.use(stubClerk(auth));
@@ -52,8 +53,8 @@ function makeApp(auth: StubAuth | null) {
     c.json({
       orgId: c.var.orgId,
       userId: c.var.userId,
-      orgRole: c.var.orgRole,
-      role: c.var.membership.role,
+      role: c.var.role,
+      membershipRole: c.var.membership.role,
     }),
   );
   return { app, ensureOrg, ensureUser, ensureMembership };
@@ -70,24 +71,20 @@ describe("requireOrg middleware", () => {
     expect((await app.request("/probe")).status).toBe(403);
   });
 
-  it("mirrors org, user and membership and exposes session role", async () => {
-    const { app, ensureUser, ensureMembership } = makeApp({
-      userId: "user_1",
-      orgId: "org_42",
-      orgRole: "org:admin",
-    });
+  it("exposes the APP role from our membership and seeds with the provider role", async () => {
+    const { app, ensureUser, ensureMembership } = makeApp(
+      { userId: "user_1", orgId: "org_42", orgRole: "org:admin" },
+      "manager", // our DB says manager — that's what authz uses
+    );
 
     const res = await app.request("/probe");
     expect(res.status).toBe(200);
-    const body = (await res.json()) as {
-      orgId: string;
-      userId: string;
-      orgRole: string;
-    };
+    const body = (await res.json()) as { orgId: string; role: string };
     expect(body.orgId).toBe("org_42");
-    expect(body.userId).toBe("user_1");
-    expect(body.orgRole).toBe("org:admin");
+    expect(body.role).toBe("manager"); // app role, not the provider's org:admin
     expect(ensureUser).toHaveBeenCalledWith("user_1", expect.any(Function));
+    // ensureMembership is seeded with the PROVIDER role (org:admin), used only
+    // if the row doesn't exist yet.
     expect(ensureMembership).toHaveBeenCalledWith(
       "org_42",
       "user_1",
@@ -97,29 +94,24 @@ describe("requireOrg middleware", () => {
 });
 
 describe("requireCapability middleware", () => {
-  function gatedApp(auth: StubAuth) {
+  /** Set the app role directly (as requireOrg would) and gate. */
+  function gatedApp(role: string | null) {
     const app = new Hono<ApiEnv>();
-    app.use(stubClerk(auth));
+    app.use(async (c, next) => {
+      if (role) c.set("role", role as never);
+      await next();
+    });
     app.use(requireCapability(can.removeMember));
     app.get("/admin-only", (c) => c.json({ ok: true }));
     return app;
   }
 
-  it("allows an admin (role read from the session)", async () => {
-    const app = gatedApp({
-      userId: "user_1",
-      orgRole: "org:admin",
-      has: ({ role }) => role === "org:admin",
-    });
-    expect((await app.request("/admin-only")).status).toBe(200);
+  it("allows an admin (role read from our DB)", async () => {
+    expect((await gatedApp("admin").request("/admin-only")).status).toBe(200);
   });
 
   it("403s a non-admin", async () => {
-    const app = gatedApp({
-      userId: "user_1",
-      orgRole: "org:member",
-      has: ({ role }) => role === "org:member",
-    });
-    expect((await app.request("/admin-only")).status).toBe(403);
+    expect((await gatedApp("manager").request("/admin-only")).status).toBe(403);
+    expect((await gatedApp(null).request("/admin-only")).status).toBe(403);
   });
 });

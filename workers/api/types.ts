@@ -1,3 +1,4 @@
+import type { AppRole } from "~/lib/capabilities";
 import type { Membership } from "./repositories/memberships-repo";
 import type { Organization } from "./repositories/organizations-repo";
 import type { User } from "./repositories/users-repo";
@@ -13,15 +14,14 @@ export type ApiEnv = {
     orgId: string;
     /** Local mirror row for the active org (set by requireOrg). */
     org: Organization;
-    /** Signed-in Clerk user id (set by requireOrg). */
+    /** Signed-in user id from the identity provider (set by requireOrg). */
     userId: string;
-    /** Local mirror row for the signed-in user (set by requireOrg). */
+    /** Local row for the signed-in user (set by requireOrg). */
     user: User;
-    /** Clerk org role from the SESSION — the authorization authority. Gate on
-     * this (via app/lib/capabilities.ts), never on `membership.role`. */
-    orgRole: string | null;
-    /** Local mirror of the active membership (data/display only — can lag a
-     * webhook; never use it for authorization). */
+    /** The active membership row (set by requireOrg). */
     membership: Membership;
+    /** The APP role for this request, from our membership row — the
+     * authorization authority. Gate on this via app/lib/capabilities.ts. */
+    role: AppRole;
   };
 };

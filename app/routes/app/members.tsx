@@ -1,7 +1,13 @@
-import { getAuth } from "@clerk/react-router/server";
 import { useEffect } from "react";
 import { useFetcher } from "react-router";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import {
   Table,
   TableBody,
@@ -10,8 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { actorFromAuth, can } from "~/lib/capabilities";
-import { apiFetch } from "~/lib/api-client.server";
+import { actorFromRole, APP_ROLES, can } from "~/lib/capabilities";
+import { ApiError, apiFetch } from "~/lib/api-client.server";
 import type { MemberView } from "../../../workers/api/repositories/memberships-repo";
 import type { Route } from "./+types/members";
 
@@ -20,28 +26,47 @@ export function meta() {
 }
 
 export async function loader(args: Route.LoaderArgs) {
-  // The actor is built from the Clerk SESSION (the live authz authority), then
-  // run through the SAME capability used to gate the server route — so the UI
-  // can never show a control the API would reject.
-  const auth = await getAuth(args);
-  const { members } = await apiFetch<{ members: MemberView[] }>(
-    args.request,
-    "/api/members",
-  );
+  // The actor is built from OUR app role (from /api/me), then run through the
+  // SAME capability that gates the server route — so the UI can never show a
+  // control the API would reject.
+  const [me, membersRes] = await Promise.all([
+    apiFetch<{ role: string; userId: string }>(args.request, "/api/me"),
+    apiFetch<{ members: MemberView[] }>(args.request, "/api/members"),
+  ]);
+  const actor = actorFromRole(me.role);
   return {
-    members,
-    canRemove: can.removeMember(actorFromAuth(auth)),
-    selfUserId: auth.userId,
+    members: membersRes.members,
+    canManageRoles: can.manageRoles(actor),
+    canRemove: can.removeMember(actor),
+    selfUserId: me.userId,
   };
 }
 
 export async function action(args: Route.ActionArgs) {
   const form = await args.request.formData();
+  const intent = String(form.get("intent") ?? "");
   const userId = String(form.get("userId") ?? "");
-  // Authorization is enforced server-side by requireCapability(can.removeMember)
-  // on DELETE /api/members/:userId — the UI gate below is just for UX.
-  await apiFetch(args.request, `/api/members/${userId}`, { method: "DELETE" });
-  return { ok: true };
+
+  try {
+    if (intent === "setRole") {
+      await apiFetch(args.request, `/api/members/${userId}/role`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ role: String(form.get("role") ?? "") }),
+      });
+      return { ok: true, intent };
+    }
+    // remove
+    await apiFetch(args.request, `/api/members/${userId}`, {
+      method: "DELETE",
+    });
+    return { ok: true, intent };
+  } catch (e) {
+    if (e instanceof ApiError && (e.status === 422 || e.status === 403)) {
+      return { ok: false, error: e.body };
+    }
+    throw e;
+  }
 }
 
 function fullName(m: MemberView): string {
@@ -49,8 +74,52 @@ function fullName(m: MemberView): string {
   return name || m.email;
 }
 
-function roleLabel(role: string): string {
-  return role.replace(/^org:/, "");
+function RoleSelect({ userId, role }: { userId: string; role: string }) {
+  const fetcher = useFetcher<typeof action>();
+  const busy = fetcher.state !== "idle";
+
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data) {
+      if (fetcher.data.ok && fetcher.data.intent === "setRole") {
+        toast.success("Role updated");
+      } else if (!fetcher.data.ok && fetcher.data.error) {
+        // surface the last-admin guard / forbidden message
+        try {
+          toast.error(
+            (JSON.parse(fetcher.data.error) as { error?: string }).error ??
+              "Could not update role",
+          );
+        } catch {
+          toast.error("Could not update role");
+        }
+      }
+    }
+  }, [fetcher.state, fetcher.data]);
+
+  return (
+    <Select
+      value={role}
+      disabled={busy}
+      onValueChange={(next) => {
+        if (next === role) return;
+        fetcher.submit(
+          { intent: "setRole", userId, role: next },
+          { method: "post" },
+        );
+      }}
+    >
+      <SelectTrigger className="h-8 w-36">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {APP_ROLES.map((r) => (
+          <SelectItem key={r} value={r}>
+            {r}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
 }
 
 function RemoveButton({ userId }: { userId: string }) {
@@ -58,13 +127,25 @@ function RemoveButton({ userId }: { userId: string }) {
   const busy = fetcher.state !== "idle";
 
   useEffect(() => {
-    if (fetcher.state === "idle" && fetcher.data?.ok) {
-      toast.success("Member removed");
+    if (fetcher.state === "idle" && fetcher.data) {
+      if (fetcher.data.ok && fetcher.data.intent === "delete") {
+        toast.success("Member removed");
+      } else if (!fetcher.data.ok && fetcher.data.error) {
+        try {
+          toast.error(
+            (JSON.parse(fetcher.data.error) as { error?: string }).error ??
+              "Could not remove member",
+          );
+        } catch {
+          toast.error("Could not remove member");
+        }
+      }
     }
   }, [fetcher.state, fetcher.data]);
 
   return (
     <fetcher.Form method="post">
+      <input type="hidden" name="intent" value="delete" />
       <input type="hidden" name="userId" value={userId} />
       <button
         type="submit"
@@ -78,7 +159,7 @@ function RemoveButton({ userId }: { userId: string }) {
 }
 
 export default function Members({ loaderData }: Route.ComponentProps) {
-  const { members, canRemove, selfUserId } = loaderData;
+  const { members, canManageRoles, canRemove, selfUserId } = loaderData;
 
   return (
     <div>
@@ -87,9 +168,11 @@ export default function Members({ loaderData }: Route.ComponentProps) {
       </p>
       <h1 className="mt-2 text-3xl">Members</h1>
       <p className="text-muted-foreground mt-2 max-w-prose text-sm">
-        Everyone in your active organization. Roles come from Clerk; only admins
-        can remove a member — the same capability (<code>can.removeMember</code>)
-        gates this page and the API.
+        Everyone in your active organization. Roles are managed in inspkt (not
+        the identity provider): <strong>admin</strong> sets up and manages the
+        team, <strong>manager</strong> oversees and assigns, and{" "}
+        <strong>inspector</strong> performs assigned inspections. The same
+        capability gates this page and the API.
       </p>
 
       <div className="rule-perforated mt-6" />
@@ -117,7 +200,11 @@ export default function Members({ loaderData }: Route.ComponentProps) {
                   {m.email}
                 </TableCell>
                 <TableCell>
-                  <span className="form-label-mono">{roleLabel(m.role)}</span>
+                  {canManageRoles ? (
+                    <RoleSelect userId={m.userId} role={m.role} />
+                  ) : (
+                    <span className="form-label-mono">{m.role}</span>
+                  )}
                 </TableCell>
                 {canRemove && (
                   <TableCell className="text-right">

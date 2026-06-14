@@ -1,17 +1,18 @@
 import { getAuth } from "@clerk/hono";
 import { createMiddleware } from "hono/factory";
-import { actorFromAuth, type Actor } from "~/lib/capabilities";
+import { actorFromRole, isAppRole, type Actor } from "~/lib/capabilities";
 import type { ApiEnv } from "../types";
 
 /**
- * Require a signed-in Clerk user with an active organization, and make the local
- * mirror rows available on the request: `c.var.org`, `c.var.user`,
- * `c.var.membership`, plus `c.var.userId` / `c.var.orgId` / `c.var.orgRole`.
+ * Require a signed-in user (Clerk = authentication) with an active organization,
+ * and make the local rows available on the request: `c.var.org`, `c.var.user`,
+ * `c.var.membership`, plus `c.var.userId` / `c.var.orgId` / `c.var.role`.
  * Runs after clerkMiddleware() and injectServices.
  *
- * `orgRole` comes from the session (the live source of truth for authorization);
- * the mirror rows exist for data/display and are filled lazily (only the first
- * request for a given org/user/role hits the Clerk API).
+ * `c.var.role` is the APP role from our own membership row (the authorization
+ * authority — see app/lib/capabilities.ts), seeded once from the provider on
+ * first sight. The Clerk session role is used only as that seed, never to
+ * authorize.
  */
 export const requireOrg = createMiddleware<ApiEnv>(async (c, next) => {
   const auth = getAuth(c);
@@ -25,10 +26,11 @@ export const requireOrg = createMiddleware<ApiEnv>(async (c, next) => {
   }
 
   const userId = auth.userId;
-  const orgRole = auth.orgRole ?? null;
+  // The provider's role — used ONLY to seed a new membership row, never to
+  // authorize. App authorization reads c.var.role below.
+  const providerRole = auth.orgRole ?? null;
   c.set("orgId", orgId);
   c.set("userId", userId);
-  c.set("orgRole", orgRole);
 
   const clerk = c.get("clerk");
   const { organizations, users, members } = c.var.services;
@@ -57,28 +59,27 @@ export const requireOrg = createMiddleware<ApiEnv>(async (c, next) => {
   });
   c.set("user", user);
 
-  // Lazy-mirror the membership with the role from the session.
-  const membership = await members.ensureMembership(
-    orgId,
-    userId,
-    orgRole ?? "org:member",
-  );
+  // Ensure the membership row exists, seeding its app role from the provider
+  // ONCE; an existing app-owned role is returned untouched.
+  const membership = await members.ensureMembership(orgId, userId, providerRole);
   c.set("membership", membership);
+  // The authoritative app role for this request; unknown values (shouldn't
+  // happen post-migration) fall back to least privilege.
+  c.set("role", isAppRole(membership.role) ? membership.role : "inspector");
 
   await next();
 });
 
 /**
- * Gate a route on a capability from app/lib/capabilities.ts. The actor's role /
- * permissions are read from the CLERK SESSION (signed, live) — never from the
- * D1 membership mirror, which can lag a webhook. 403s when the capability is
- * not granted.
+ * Gate a route on a capability from app/lib/capabilities.ts. The actor's role
+ * is read from OUR membership row (`c.var.role`) — the app-owned authorization
+ * authority, not the identity provider. 403s when the capability is not granted.
  *
  *   authed.delete("/:id", requireCapability(can.removeMember), handler)
  */
 export function requireCapability(cap: (actor: Actor) => boolean) {
   return createMiddleware<ApiEnv>(async (c, next) => {
-    const actor = actorFromAuth(getAuth(c));
+    const actor = actorFromRole(c.var.role);
     if (!cap(actor)) {
       return c.json({ error: "forbidden" }, 403);
     }

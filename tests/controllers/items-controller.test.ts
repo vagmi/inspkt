@@ -16,6 +16,22 @@ function makeApp(items = mockItemsService()) {
   app.use(async (c, next) => {
     c.set("orgId", "org_test_1");
     c.set("org", fakeOrg());
+    c.set("role", "admin"); // can.setup — writes are admin/manager gated
+    c.set("services", { items } as never);
+    await next();
+  });
+  app.route("/items", createItemsController());
+  return { app, items };
+}
+
+/** An app whose request role is an inspector — used to prove server-side gating. */
+function makeInspectorApp(items = mockItemsService()) {
+  const app = new Hono<ApiEnv>();
+  app.onError(domainErrorHandler);
+  app.use(async (c, next) => {
+    c.set("orgId", "org_test_1");
+    c.set("org", fakeOrg());
+    c.set("role", "inspector");
     c.set("services", { items } as never);
     await next();
   });
@@ -111,6 +127,20 @@ describe("items controller", () => {
     expect(items.update).toHaveBeenCalledWith("org_test_1", "item_1", {
       name: "Renamed",
     });
+  });
+
+  it("403s an inspector creating an item (writes are can.setup)", async () => {
+    const { app, items } = makeInspectorApp();
+    const res = await app.request("/items", json({ name: "Nope" }));
+    expect(res.status).toBe(403);
+    expect(items.create).not.toHaveBeenCalled();
+  });
+
+  it("still lets an inspector READ items", async () => {
+    const { app, items } = makeInspectorApp();
+    items.list.mockResolvedValue([fakeItem()]);
+    const res = await app.request("/items");
+    expect(res.status).toBe(200);
   });
 
   it("DELETE /items/:id deletes", async () => {

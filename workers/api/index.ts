@@ -45,7 +45,8 @@ export function createApi() {
       org: c.var.org,
       userId: c.var.userId,
       user: c.var.user,
-      orgRole: c.var.orgRole,
+      // The app role — what the UI builds its actor from (actorFromRole).
+      role: c.var.role,
       membership: c.var.membership,
     }),
   );

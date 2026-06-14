@@ -1,7 +1,9 @@
+import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { can } from "~/lib/capabilities";
 import { requireCapability } from "../middleware/auth";
 import type { ApiEnv } from "../types";
+import { memberRoleSchema } from "../validation";
 
 /** /api/members — list the active org's members; remove one (admin only).
  * Mounted inside the authed group, so c.var.{orgId,services} are present.
@@ -35,6 +37,22 @@ export function createMembersController() {
 
     return c.json({ members });
   });
+
+  // Change a member's app role — authorization lives in our DB, so this is a
+  // pure local write (no provider call). Admins only.
+  app.patch(
+    "/:userId/role",
+    requireCapability(can.manageRoles),
+    zValidator("json", memberRoleSchema),
+    async (c) => {
+      const membership = await c.var.services.members.setMemberRole(
+        c.var.orgId,
+        c.req.param("userId"),
+        c.req.valid("json").role,
+      );
+      return c.json({ membership });
+    },
+  );
 
   app.delete("/:userId", requireCapability(can.removeMember), async (c) => {
     const clerk = c.get("clerk");

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { useFetcher } from "react-router";
+import { redirect, useFetcher } from "react-router";
 import { toast } from "sonner";
+import { actorFromRole, can, landingPath } from "~/lib/capabilities";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -29,17 +30,21 @@ export function meta() {
 // the copy-me example for a CRUD resource: list (loader) + create/delete
 // (action), rendered with a dialog and per-row forms.
 export async function loader({ request }: Route.LoaderArgs) {
-  const [me, itemsRes] = await Promise.all([
-    apiFetch<{ org: Organization; user: User; orgRole: string | null }>(
-      request,
-      "/api/me",
-    ),
-    apiFetch<{ items: Item[] }>(request, "/api/items"),
-  ]);
+  const me = await apiFetch<{ org: Organization; user: User; role: string }>(
+    request,
+    "/api/me",
+  );
+  // This is the setup index. Inspectors don't manage items — send them to
+  // their inspections instead of showing an empty, forbidden screen.
+  const actor = actorFromRole(me.role);
+  if (!can.setup(actor)) {
+    throw redirect(landingPath(actor));
+  }
+  const itemsRes = await apiFetch<{ items: Item[] }>(request, "/api/items");
   return {
     org: me.org,
     user: me.user,
-    orgRole: me.orgRole,
+    role: me.role,
     items: itemsRes.items,
   };
 }
@@ -289,8 +294,7 @@ function NewItemDialog() {
 }
 
 export default function ItemsList({ loaderData }: Route.ComponentProps) {
-  const { org, user, orgRole, items } = loaderData;
-  const role = (orgRole ?? "org:member").replace(/^org:/, "");
+  const { org, user, role, items } = loaderData;
   return (
     <div>
       <div className="flex items-end justify-between">

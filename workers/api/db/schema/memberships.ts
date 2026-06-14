@@ -9,12 +9,14 @@ import { now } from "./helpers";
 import { organizations } from "./organizations";
 import { users } from "./users";
 
-/** A user's membership of an organization, with their role — the local mirror
- * of Clerk's User ↔ Organization link. One row per (org, user).
+/** A user's membership of an organization, with their role. One row per
+ * (org, user). Membership existence follows the identity provider (Clerk org
+ * membership); the `role` is APP-OWNED.
  *
- * `role` is the Clerk role string (e.g. "org:admin", "org:member"). It is a
- * mirror for display/data only and can lag a webhook — DO NOT gate on it.
- * Authorize from the Clerk session instead (see app/lib/capabilities.ts). */
+ * `role` holds an app role — "admin" | "manager" | "inspector" (see
+ * app/lib/capabilities.ts) — and IS the authorization authority. It's seeded
+ * once from the provider at creation, then changed only by an admin in-app;
+ * provider webhooks never overwrite it. */
 export const memberships = sqliteTable(
   "memberships",
   {
