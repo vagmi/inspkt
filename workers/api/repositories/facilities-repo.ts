@@ -1,17 +1,22 @@
 import { and, desc, eq } from "drizzle-orm";
 import { newId } from "~/lib/id";
 import type { Db } from "../db/client";
-import { items } from "../db/schema";
+import { clients, facilities } from "../db/schema";
 import { now } from "../db/schema/helpers";
 
-// The repository is the ONLY layer that touches Drizzle/D1. Every query is
-// scoped by `orgId` so one org can never read another's rows. Copy this file
-// when you add your own resource.
+// The only layer that touches Drizzle/D1 for facilities. Every query is scoped
+// by `orgId`. A facility belongs to a client.
 
-export type Item = typeof items.$inferSelect;
+export type Facility = typeof facilities.$inferSelect;
 
-export interface ItemCreate {
+/** A facility row with its client's name joined, for list views. */
+export interface FacilityListRow extends Facility {
+  clientName: string | null;
+}
+
+export interface FacilityCreate {
   orgId: string;
+  clientId: string;
   name: string;
   description?: string | null;
   category?: string | null;
@@ -20,7 +25,8 @@ export interface ItemCreate {
   locationLabel?: string | null;
 }
 
-export interface ItemUpdate {
+export interface FacilityUpdate {
+  clientId?: string;
   name?: string;
   description?: string | null;
   category?: string | null;
@@ -29,14 +35,15 @@ export interface ItemUpdate {
   locationLabel?: string | null;
 }
 
-export function createItemsRepo(db: Db) {
+export function createFacilitiesRepo(db: Db) {
   return {
-    async create(input: ItemCreate): Promise<Item> {
+    async create(input: FacilityCreate): Promise<Facility> {
       const [row] = await db
-        .insert(items)
+        .insert(facilities)
         .values({
           id: newId(),
           orgId: input.orgId,
+          clientId: input.clientId,
           name: input.name,
           description: input.description ?? null,
           category: input.category ?? null,
@@ -48,37 +55,40 @@ export function createItemsRepo(db: Db) {
       return row;
     },
 
-    async getById(orgId: string, id: string): Promise<Item | null> {
+    async getById(orgId: string, id: string): Promise<Facility | null> {
       const [row] = await db
         .select()
-        .from(items)
-        .where(and(eq(items.orgId, orgId), eq(items.id, id)))
+        .from(facilities)
+        .where(and(eq(facilities.orgId, orgId), eq(facilities.id, id)))
         .limit(1);
       return row ?? null;
     },
 
-    async listByOrg(orgId: string): Promise<Item[]> {
-      return db
-        .select()
-        .from(items)
-        .where(eq(items.orgId, orgId))
-        .orderBy(desc(items.createdAt));
+    async listByOrg(orgId: string): Promise<FacilityListRow[]> {
+      const rows = await db
+        .select({ facility: facilities, clientName: clients.name })
+        .from(facilities)
+        .leftJoin(clients, eq(facilities.clientId, clients.id))
+        .where(eq(facilities.orgId, orgId))
+        .orderBy(desc(facilities.createdAt));
+      return rows.map((r) => ({ ...r.facility, clientName: r.clientName }));
     },
 
     async countByOrg(orgId: string): Promise<number> {
       const rows = await db
-        .select({ id: items.id })
-        .from(items)
-        .where(eq(items.orgId, orgId));
+        .select({ id: facilities.id })
+        .from(facilities)
+        .where(eq(facilities.orgId, orgId));
       return rows.length;
     },
 
     async update(
       orgId: string,
       id: string,
-      patch: ItemUpdate,
-    ): Promise<Item | null> {
-      const set: Partial<typeof items.$inferInsert> = { updatedAt: now() };
+      patch: FacilityUpdate,
+    ): Promise<Facility | null> {
+      const set: Partial<typeof facilities.$inferInsert> = { updatedAt: now() };
+      if (patch.clientId !== undefined) set.clientId = patch.clientId;
       if (patch.name !== undefined) set.name = patch.name;
       if (patch.description !== undefined) set.description = patch.description;
       if (patch.category !== undefined) set.category = patch.category;
@@ -88,21 +98,21 @@ export function createItemsRepo(db: Db) {
         set.locationLabel = patch.locationLabel;
 
       const [row] = await db
-        .update(items)
+        .update(facilities)
         .set(set)
-        .where(and(eq(items.orgId, orgId), eq(items.id, id)))
+        .where(and(eq(facilities.orgId, orgId), eq(facilities.id, id)))
         .returning();
       return row ?? null;
     },
 
     async delete(orgId: string, id: string): Promise<boolean> {
       const rows = await db
-        .delete(items)
-        .where(and(eq(items.orgId, orgId), eq(items.id, id)))
-        .returning({ id: items.id });
+        .delete(facilities)
+        .where(and(eq(facilities.orgId, orgId), eq(facilities.id, id)))
+        .returning({ id: facilities.id });
       return rows.length > 0;
     },
   };
 }
 
-export type ItemsRepo = ReturnType<typeof createItemsRepo>;
+export type FacilitiesRepo = ReturnType<typeof createFacilitiesRepo>;

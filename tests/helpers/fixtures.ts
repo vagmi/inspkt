@@ -14,9 +14,9 @@ import {
   type InspectionWithObservations,
 } from "../../workers/api/repositories/inspections-repo";
 import {
-  createItemsRepo,
-  type Item,
-} from "../../workers/api/repositories/items-repo";
+  createFacilitiesRepo,
+  type Facility,
+} from "../../workers/api/repositories/facilities-repo";
 import { createMembershipsRepo } from "../../workers/api/repositories/memberships-repo";
 import { createOrganizationsRepo } from "../../workers/api/repositories/organizations-repo";
 import { createUsersRepo } from "../../workers/api/repositories/users-repo";
@@ -41,15 +41,16 @@ export async function makeMembership(
   db: Db,
   orgId: string,
   userId: string,
-  role = "org:member",
+  role = "inspector",
 ) {
-  await createMembershipsRepo(db).upsert(orgId, userId, role);
+  await createMembershipsRepo(db).ensureExists(orgId, userId, role);
 }
 
-export async function makeItem(
+export async function makeFacility(
   db: Db,
   orgId: string,
   overrides: Partial<{
+    clientId: string;
     name: string;
     description: string | null;
     category: string | null;
@@ -57,11 +58,15 @@ export async function makeItem(
     locationLng: number | null;
     locationLabel: string | null;
   }> = {},
-): Promise<Item> {
-  return createItemsRepo(db).create({
+): Promise<Facility> {
+  // A facility needs a client; create one if the caller didn't supply an id.
+  const clientId =
+    overrides.clientId ?? (await makeClient(db, orgId)).id;
+  return createFacilitiesRepo(db).create({
     orgId,
-    name: overrides.name ?? "First Item",
-    description: overrides.description ?? "A sample item",
+    clientId,
+    name: overrides.name ?? "First Facility",
+    description: overrides.description ?? "A sample facility",
     category: overrides.category,
     locationLat: overrides.locationLat,
     locationLng: overrides.locationLng,
@@ -104,7 +109,7 @@ export async function makeForm(
   });
 }
 
-/** Create a draft inspection wired to a fresh item, form, and inspector.
+/** Create a draft inspection wired to a fresh facility, form, and inspector.
  * Returns the inspection plus the ids it references, so tests can drive the
  * observation/submit flow. */
 export async function makeInspection(
@@ -112,7 +117,7 @@ export async function makeInspection(
   orgId: string,
   opts: {
     inspectorUserId?: string;
-    itemId?: string;
+    facilityId?: string;
     formId?: string;
     checkpoints?: CheckpointInput[];
     capturedLat?: number | null;
@@ -120,27 +125,27 @@ export async function makeInspection(
   } = {},
 ): Promise<{
   inspection: InspectionWithObservations;
-  itemId: string;
+  facilityId: string;
   formId: string;
   form: FormWithCheckpoints;
   inspectorUserId: string;
 }> {
   const inspectorUserId = opts.inspectorUserId ?? "user_test_1";
   await makeUser(db, inspectorUserId);
-  const itemId = opts.itemId ?? (await makeItem(db, orgId)).id;
+  const facilityId = opts.facilityId ?? (await makeFacility(db, orgId)).id;
   const form =
     opts.formId !== undefined
       ? (await createFormsRepo(db).getById(orgId, opts.formId))!
       : await makeForm(db, orgId, { checkpoints: opts.checkpoints });
   const inspection = await createInspectionsRepo(db).create({
     orgId,
-    itemId,
+    facilityId,
     formId: form.id,
     inspectorUserId,
     capturedLat: opts.capturedLat,
     capturedLng: opts.capturedLng,
   });
-  return { inspection, itemId, formId: form.id, form, inspectorUserId };
+  return { inspection, facilityId, formId: form.id, form, inspectorUserId };
 }
 
 export async function makeClient(

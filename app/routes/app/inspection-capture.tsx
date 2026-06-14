@@ -440,7 +440,7 @@ export default function InspectionCapture({ loaderData }: Route.ComponentProps) 
             </Link>{" "}
             / capture
           </p>
-          <h1 className="mt-2 truncate text-2xl">{inspection.item.name}</h1>
+          <h1 className="mt-2 truncate text-2xl">{inspection.facility.name}</h1>
           <p className="text-muted-foreground mt-1 text-sm">
             {inspection.form.name} · {answeredCount}/{checkpoints.length}{" "}
             answered{" "}

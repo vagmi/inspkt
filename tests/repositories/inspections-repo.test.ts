@@ -73,7 +73,7 @@ describe("inspections repo", () => {
     expect(submitted?.submittedAt).toBeGreaterThan(0);
   });
 
-  it("lists per org with item and form names", async () => {
+  it("lists per org with facility and form names", async () => {
     const db = testDb();
     const repo = createInspectionsRepo(db);
     await makeOrg(db, "org_insp_list_a");
@@ -83,7 +83,7 @@ describe("inspections repo", () => {
 
     const list = await repo.listByOrg("org_insp_list_a");
     expect(list).toHaveLength(1);
-    expect(list[0].itemName).toBe("First Item");
+    expect(list[0].facilityName).toBe("First Facility");
     expect(list[0].formName).toBe("Quarterly HVAC Check");
   });
 

@@ -131,7 +131,7 @@ function PricingCard({ plan }: { plan: PlanId }) {
       <p className="form-label-mono text-muted-foreground">{copy.name}</p>
       <p className="mt-2 font-heading text-3xl">{copy.price}</p>
       <ul className="mt-4 space-y-1.5 text-sm">
-        <li>{limits.maxItems.toLocaleString()} items</li>
+        <li>{limits.maxFacilities.toLocaleString()} facilities</li>
         <li>{limits.apiCallsPerMonth.toLocaleString()} API calls/month</li>
         <li className={limits.webhooks ? "" : "text-muted-foreground/60"}>
           {limits.webhooks ? "Webhooks included" : "No webhooks"}

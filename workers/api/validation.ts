@@ -8,8 +8,9 @@ const latLngPair = (v: {
   locationLng?: number | null;
 }) => (v.locationLat == null) === (v.locationLng == null);
 
-export const itemCreateSchema = z
+export const facilityCreateSchema = z
   .object({
+    clientId: z.string().min(1, "a client is required"),
     name: z.string().min(1, "name is required").max(200),
     description: z.string().max(2000).optional(),
     category: z.string().max(100).optional(),
@@ -19,8 +20,9 @@ export const itemCreateSchema = z
   })
   .refine(latLngPair, "locationLat and locationLng must be set together");
 
-export const itemUpdateSchema = z
+export const facilityUpdateSchema = z
   .object({
+    clientId: z.string().min(1).optional(),
     name: z.string().min(1).max(200).optional(),
     description: z.string().max(2000).nullable().optional(),
     category: z.string().max(100).nullable().optional(),
@@ -31,8 +33,8 @@ export const itemUpdateSchema = z
   .refine((v) => Object.keys(v).length > 0, "no fields to update")
   .refine(latLngPair, "locationLat and locationLng must be set together");
 
-export type ItemCreateInput = z.infer<typeof itemCreateSchema>;
-export type ItemUpdateInput = z.infer<typeof itemUpdateSchema>;
+export type FacilityCreateInput = z.infer<typeof facilityCreateSchema>;
+export type FacilityUpdateInput = z.infer<typeof facilityUpdateSchema>;
 
 // ---- Forms & checkpoints ----------------------------------------------
 
@@ -122,7 +124,7 @@ const capturedLatLngPair = (v: {
 
 export const inspectionCreateSchema = z
   .object({
-    itemId: z.string().min(1),
+    facilityId: z.string().min(1),
     formId: z.string().min(1),
     capturedLat: z.number().min(-90).max(90).optional(),
     capturedLng: z.number().min(-180).max(180).optional(),

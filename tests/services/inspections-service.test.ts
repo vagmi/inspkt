@@ -8,11 +8,11 @@ import {
   fakeCheckpoint,
   fakeForm,
   fakeInspection,
-  fakeItem,
+  fakeFacility,
   fakeObservation,
   mockFormsRepo,
   mockInspectionsRepo,
-  mockItemsRepo,
+  mockFacilitiesRepo,
 } from "../helpers/mocks";
 
 const ORG = "org_test_1";
@@ -20,14 +20,14 @@ const USER = "user_test_1";
 
 function makeService() {
   const inspectionsRepo = mockInspectionsRepo();
-  const itemsRepo = mockItemsRepo();
+  const facilitiesRepo = mockFacilitiesRepo();
   const formsRepo = mockFormsRepo();
   const service = createInspectionsService({
     inspectionsRepo,
-    itemsRepo,
+    facilitiesRepo,
     formsRepo,
   });
-  return { service, inspectionsRepo, itemsRepo, formsRepo };
+  return { service, inspectionsRepo, facilitiesRepo, formsRepo };
 }
 
 /** A form with one pass/fail checkpoint, configurable. */
@@ -37,9 +37,9 @@ function formWith(...checkpoints: ReturnType<typeof fakeCheckpoint>[]) {
 
 describe("inspections service", () => {
   describe("create", () => {
-    it("creates a draft when item and form exist", async () => {
-      const { service, inspectionsRepo, itemsRepo, formsRepo } = makeService();
-      itemsRepo.getById.mockResolvedValue(fakeItem());
+    it("creates a draft when facility and form exist", async () => {
+      const { service, inspectionsRepo, facilitiesRepo, formsRepo } = makeService();
+      facilitiesRepo.getById.mockResolvedValue(fakeFacility());
       formsRepo.getById.mockResolvedValue(formWith(fakeCheckpoint()));
       inspectionsRepo.create.mockResolvedValue({
         ...fakeInspection(),
@@ -47,7 +47,7 @@ describe("inspections service", () => {
       });
 
       const detail = await service.create(ORG, USER, {
-        itemId: "item_1",
+        facilityId: "facility_1",
         formId: "form_1",
       });
       expect(detail.status).toBe("draft");
@@ -55,32 +55,32 @@ describe("inspections service", () => {
         expect.objectContaining({
           orgId: ORG,
           inspectorUserId: USER,
-          itemId: "item_1",
+          facilityId: "facility_1",
           formId: "form_1",
         }),
       );
     });
 
-    it("throws NotFound when the item is missing", async () => {
-      const { service, itemsRepo, formsRepo } = makeService();
-      itemsRepo.getById.mockResolvedValue(null);
+    it("throws NotFound when the facility is missing", async () => {
+      const { service, facilitiesRepo, formsRepo } = makeService();
+      facilitiesRepo.getById.mockResolvedValue(null);
       formsRepo.getById.mockResolvedValue(formWith());
 
       await expect(
-        service.create(ORG, USER, { itemId: "nope", formId: "form_1" }),
+        service.create(ORG, USER, { facilityId: "nope", formId: "form_1" }),
       ).rejects.toBeInstanceOf(NotFoundError);
     });
   });
 
   describe("get — location mismatch", () => {
-    it("flags a capture far from the item's registered location", async () => {
-      const { service, inspectionsRepo, itemsRepo, formsRepo } = makeService();
+    it("flags a capture far from the facility's registered location", async () => {
+      const { service, inspectionsRepo, facilitiesRepo, formsRepo } = makeService();
       inspectionsRepo.getById.mockResolvedValue({
         ...fakeInspection({ capturedLat: 13.05, capturedLng: 77.7 }),
         observations: [],
       });
-      itemsRepo.getById.mockResolvedValue(
-        fakeItem({ locationLat: 12.97, locationLng: 77.59 }),
+      facilitiesRepo.getById.mockResolvedValue(
+        fakeFacility({ locationLat: 12.97, locationLng: 77.59 }),
       );
       formsRepo.getById.mockResolvedValue(formWith());
 
@@ -90,12 +90,12 @@ describe("inspections service", () => {
     });
 
     it("does not flag when locations are close, and is null without coords", async () => {
-      const { service, inspectionsRepo, itemsRepo, formsRepo } = makeService();
+      const { service, inspectionsRepo, facilitiesRepo, formsRepo } = makeService();
       inspectionsRepo.getById.mockResolvedValue({
         ...fakeInspection({ capturedLat: null, capturedLng: null }),
         observations: [],
       });
-      itemsRepo.getById.mockResolvedValue(fakeItem());
+      facilitiesRepo.getById.mockResolvedValue(fakeFacility());
       formsRepo.getById.mockResolvedValue(formWith());
 
       const detail = await service.get(ORG, "insp_1");
@@ -160,7 +160,7 @@ describe("inspections service", () => {
     });
 
     it("submits when every judged checkpoint is answered and photos present", async () => {
-      const { service, inspectionsRepo, itemsRepo, formsRepo } = makeService();
+      const { service, inspectionsRepo, facilitiesRepo, formsRepo } = makeService();
       const cp = fakeCheckpoint({
         id: "cp_1",
         answerType: "pass_fail",
@@ -179,7 +179,7 @@ describe("inspections service", () => {
       // getById is called repeatedly (load, after save, final load)
       inspectionsRepo.getById.mockResolvedValue(answered);
       formsRepo.getById.mockResolvedValue(formWith(cp));
-      itemsRepo.getById.mockResolvedValue(fakeItem());
+      facilitiesRepo.getById.mockResolvedValue(fakeFacility());
       inspectionsRepo.markSubmitted.mockResolvedValue(
         fakeInspection({ status: "submitted" }),
       );
@@ -191,14 +191,14 @@ describe("inspections service", () => {
     });
 
     it("ignores observation-type checkpoints in the answered gate", async () => {
-      const { service, inspectionsRepo, itemsRepo, formsRepo } = makeService();
+      const { service, inspectionsRepo, facilitiesRepo, formsRepo } = makeService();
       const cp = fakeCheckpoint({ id: "cp_obs", answerType: "observation" });
       inspectionsRepo.getById.mockResolvedValue({
         ...fakeInspection(),
         observations: [], // observation checkpoints need no answer
       });
       formsRepo.getById.mockResolvedValue(formWith(cp));
-      itemsRepo.getById.mockResolvedValue(fakeItem());
+      facilitiesRepo.getById.mockResolvedValue(fakeFacility());
       inspectionsRepo.markSubmitted.mockResolvedValue(
         fakeInspection({ status: "submitted" }),
       );

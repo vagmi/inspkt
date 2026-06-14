@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { newId } from "~/lib/id";
 import type { Db } from "../db/client";
-import { forms, inspections, items, observations } from "../db/schema";
+import { facilities, forms, inspections, observations } from "../db/schema";
 import type { ObservationAnswer } from "../db/schema/inspections";
 import { now } from "../db/schema/helpers";
 
@@ -14,13 +14,13 @@ export interface InspectionWithObservations extends Inspection {
 
 /** A row for the list view: the inspection plus the names it points at. */
 export interface InspectionListRow extends Inspection {
-  itemName: string | null;
+  facilityName: string | null;
   formName: string | null;
 }
 
 export interface InspectionCreate {
   orgId: string;
-  itemId: string;
+  facilityId: string;
   formId: string;
   inspectorUserId: string;
   capturedLat?: number | null;
@@ -102,7 +102,7 @@ export function createInspectionsRepo(db: Db) {
         .values({
           id: newId(),
           orgId: input.orgId,
-          itemId: input.itemId,
+          facilityId: input.facilityId,
           formId: input.formId,
           inspectorUserId: input.inspectorUserId,
           status: "draft",
@@ -130,17 +130,17 @@ export function createInspectionsRepo(db: Db) {
       const rows = await db
         .select({
           inspection: inspections,
-          itemName: items.name,
+          facilityName: facilities.name,
           formName: forms.name,
         })
         .from(inspections)
-        .leftJoin(items, eq(inspections.itemId, items.id))
+        .leftJoin(facilities, eq(inspections.facilityId, facilities.id))
         .leftJoin(forms, eq(inspections.formId, forms.id))
         .where(eq(inspections.orgId, orgId))
         .orderBy(desc(inspections.createdAt));
       return rows.map((r) => ({
         ...r.inspection,
-        itemName: r.itemName,
+        facilityName: r.facilityName,
         formName: r.formName,
       }));
     },

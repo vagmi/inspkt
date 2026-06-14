@@ -43,6 +43,13 @@
       "when": 1781469605869,
       "tag": "0005_needy_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1781471537145,
+      "tag": "0006_faithful_speedball",
+      "breakpoints": true
     }
   ]
 }

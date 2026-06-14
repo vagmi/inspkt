@@ -6,17 +6,20 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import { facilities } from "./facilities";
 import { checkpoints, forms } from "./forms";
 import { now } from "./helpers";
-import { items } from "./items";
 import { organizations } from "./organizations";
 import { users } from "./users";
 
-/** An inspection: one inspector working a form against an item. Starts as a
+/** An inspection: one inspector working a form against a facility. Starts as a
  * draft (resumable) and finalizes on submit. Verdict/score/re-inspection
- * fields are added in Phase 4 — submit here only flips the status. Captured
+ * fields are added in Phase 11 — submit here only flips the status. Captured
  * lat/lng record where the inspection was actually performed, so it can be
- * compared against the item's registered location. */
+ * compared against the facility's registered location.
+ *
+ * (Phase 9 will retarget this to Equipment; the FK column is still physically
+ * `item_id` — mapped to `facilityId` — pointing at the facilities table.) */
 export const inspections = sqliteTable(
   "inspections",
   {
@@ -24,9 +27,9 @@ export const inspections = sqliteTable(
     orgId: text("org_id")
       .notNull()
       .references(() => organizations.id),
-    itemId: text("item_id")
+    facilityId: text("item_id")
       .notNull()
-      .references(() => items.id),
+      .references(() => facilities.id),
     formId: text("form_id")
       .notNull()
       .references(() => forms.id),
@@ -44,7 +47,7 @@ export const inspections = sqliteTable(
   },
   (t) => [
     index("inspections_org_id_idx").on(t.orgId),
-    index("inspections_item_id_idx").on(t.itemId),
+    index("inspections_item_id_idx").on(t.facilityId),
   ],
 );
 

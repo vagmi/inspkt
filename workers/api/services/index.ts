@@ -1,16 +1,16 @@
 import { getDb } from "../db/client";
 import { createClientsRepo } from "../repositories/clients-repo";
+import { createFacilitiesRepo } from "../repositories/facilities-repo";
 import { createFormsRepo } from "../repositories/forms-repo";
 import { createInspectionsRepo } from "../repositories/inspections-repo";
-import { createItemsRepo } from "../repositories/items-repo";
 import { createMembershipsRepo } from "../repositories/memberships-repo";
 import { createOrganizationsRepo } from "../repositories/organizations-repo";
 import { createUsageRepo } from "../repositories/usage-repo";
 import { createUsersRepo } from "../repositories/users-repo";
 import { createClientsService } from "./clients-service";
+import { createFacilitiesService } from "./facilities-service";
 import { createFormsService } from "./forms-service";
 import { createInspectionsService } from "./inspections-service";
-import { createItemsService } from "./items-service";
 import { createUploadsService } from "./uploads-service";
 import { createMembersService } from "./members-service";
 import { createOrganizationsService } from "./organizations-service";
@@ -28,7 +28,7 @@ export function createServices(env: Env) {
   const usersRepo = createUsersRepo(db);
   const membershipsRepo = createMembershipsRepo(db);
   const usageRepo = createUsageRepo(db);
-  const itemsRepo = createItemsRepo(db);
+  const facilitiesRepo = createFacilitiesRepo(db);
   const formsRepo = createFormsRepo(db);
   const inspectionsRepo = createInspectionsRepo(db);
   const clientsRepo = createClientsRepo(db);
@@ -37,11 +37,15 @@ export function createServices(env: Env) {
     organizations: createOrganizationsService({ orgsRepo }),
     users: createUsersService({ usersRepo }),
     members: createMembersService({ membershipsRepo, usersRepo }),
-    items: createItemsService({ itemsRepo, usageRepo }),
+    facilities: createFacilitiesService({
+      facilitiesRepo,
+      clientsRepo,
+      usageRepo,
+    }),
     forms: createFormsService({ formsRepo }),
     inspections: createInspectionsService({
       inspectionsRepo,
-      itemsRepo,
+      facilitiesRepo,
       formsRepo,
     }),
     clients: createClientsService({ clientsRepo }),

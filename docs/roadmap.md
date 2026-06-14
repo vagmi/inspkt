@@ -100,15 +100,22 @@ is the **first slice on the new UI foundation**: the list uses the TanStack
 + zodResolver** with the shared shadcn `Form` components. Inspector access
 redirects to their work. 149 tests green; deployed.
 
-### [ ] Phase 7 — Facilities (evolve `items`)
+### [x] Phase 7 — Facilities (evolve `items`)
 **Goal:** facilities belong to a client; today's items become facilities.
-**Slice:** rename `items` → `facilities`; add `client_id` FK (+ index); keep
-geo-location. Migration renames the table/columns and backfills a default
-client for any existing rows. Update repo/service/controller/route names and
-the capture references. Facility list is a **DataTable** scoped by client;
-create/edit is an **RHF Form** with a client picker + map location.
-**Done when:** facilities list under their client; existing inspections still
-resolve; tests green; deploys.
+**Shipped (2026-06-14):** the entire `items` code/API/UI surface renamed to
+**facilities** (repo, service, controller, `/api/facilities`, routes, plans
+`maxFacilities`, tests). Added a `client_id` FK + index; inspections now target
+a facility (`facilityId`, joins resolve `facilityName`). Facility list is a
+**DataTable** with a client column; create/edit is an **RHF Form** with a client
+picker + geolocation capture. 143 tests green; deployed.
+**Migration note (safe & additive):** the physical D1 table is still named
+`items` (the Drizzle export is `facilities = sqliteTable("items", …)`). Keeping
+the table name avoided a risky SQLite table/column rename + FK rebuild — the
+migration only `ADD`ed `client_id` and **backfilled** an "Unassigned" client per
+org for pre-existing facilities. The inspections FK column is likewise still
+physically `item_id` (mapped to `facilityId`). A future cosmetic migration can
+rename the physical columns if ever needed; nothing in code references the old
+names.
 
 ### [ ] Phase 8 — Equipment + Equipment Types
 **Goal:** register the actual inspectable assets, typed, and link forms to types.

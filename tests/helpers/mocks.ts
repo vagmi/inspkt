@@ -8,7 +8,7 @@ import type {
   Inspection,
   Observation,
 } from "../../workers/api/repositories/inspections-repo";
-import type { Item } from "../../workers/api/repositories/items-repo";
+import type { Facility } from "../../workers/api/repositories/facilities-repo";
 import type { Membership } from "../../workers/api/repositories/memberships-repo";
 import type { Organization } from "../../workers/api/repositories/organizations-repo";
 import type { User } from "../../workers/api/repositories/users-repo";
@@ -34,12 +34,13 @@ export function mockOrganizationsRepo() {
   };
 }
 
-export function fakeItem(overrides: Partial<Item> = {}): Item {
+export function fakeFacility(overrides: Partial<Facility> = {}): Facility {
   return {
-    id: "item_1",
+    id: "facility_1",
     orgId: "org_test_1",
-    name: "First Item",
-    description: "A sample item",
+    clientId: "client_1",
+    name: "First Facility",
+    description: "A sample facility",
     category: null,
     locationLat: null,
     locationLng: null,
@@ -50,7 +51,7 @@ export function fakeItem(overrides: Partial<Item> = {}): Item {
   };
 }
 
-export function mockItemsRepo() {
+export function mockFacilitiesRepo() {
   return {
     create: vi.fn(),
     getById: vi.fn(),
@@ -61,7 +62,7 @@ export function mockItemsRepo() {
   };
 }
 
-export function mockItemsService() {
+export function mockFacilitiesService() {
   return {
     list: vi.fn(),
     get: vi.fn(),
@@ -129,7 +130,7 @@ export function fakeInspection(
   return {
     id: "insp_1",
     orgId: "org_test_1",
-    itemId: "item_1",
+    facilityId: "facility_1",
     formId: "form_1",
     inspectorUserId: "user_test_1",
     status: "draft",

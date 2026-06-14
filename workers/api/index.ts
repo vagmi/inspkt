@@ -2,10 +2,10 @@ import { clerkMiddleware } from "@clerk/hono";
 import { Hono } from "hono";
 import { domainErrorHandler } from "./controllers/error-handler";
 import { createClientsController } from "./controllers/clients-controller";
+import { createFacilitiesController } from "./controllers/facilities-controller";
 import { createFormsController } from "./controllers/forms-controller";
 import { createInspectionsController } from "./controllers/inspections-controller";
 import { createIntegrationsController } from "./controllers/integrations-controller";
-import { createItemsController } from "./controllers/items-controller";
 import { createMembersController } from "./controllers/members-controller";
 import { createUploadsController } from "./controllers/uploads-controller";
 import { requireOrg } from "./middleware/auth";
@@ -51,7 +51,7 @@ export function createApi() {
       membership: c.var.membership,
     }),
   );
-  authed.route("/items", createItemsController());
+  authed.route("/facilities", createFacilitiesController());
   authed.route("/clients", createClientsController());
   authed.route("/forms", createFormsController());
   authed.route("/inspections", createInspectionsController());

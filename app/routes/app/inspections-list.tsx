@@ -22,8 +22,8 @@ import {
 import { apiFetch } from "~/lib/api-client.server";
 import { cn } from "~/lib/utils";
 import type { Form } from "../../../workers/api/repositories/forms-repo";
+import type { FacilityListRow } from "../../../workers/api/repositories/facilities-repo";
 import type { InspectionListRow } from "../../../workers/api/repositories/inspections-repo";
-import type { Item } from "../../../workers/api/repositories/items-repo";
 import type { Route } from "./+types/inspections-list";
 
 export function meta() {
@@ -31,15 +31,15 @@ export function meta() {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const [inspectionsRes, formsRes, itemsRes] = await Promise.all([
+  const [inspectionsRes, formsRes, facilitiesRes] = await Promise.all([
     apiFetch<{ inspections: InspectionListRow[] }>(request, "/api/inspections"),
     apiFetch<{ forms: Form[] }>(request, "/api/forms"),
-    apiFetch<{ items: Item[] }>(request, "/api/items"),
+    apiFetch<{ facilities: FacilityListRow[] }>(request, "/api/facilities"),
   ]);
   return {
     inspections: inspectionsRes.inspections,
     forms: formsRes.forms,
-    items: itemsRes.items,
+    facilities: facilitiesRes.facilities,
   };
 }
 
@@ -55,10 +55,10 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   // create a draft, then jump into the capture walker
-  const itemId = String(form.get("itemId") ?? "");
+  const facilityId = String(form.get("facilityId") ?? "");
   const formId = String(form.get("formId") ?? "");
-  if (!itemId || !formId) {
-    return { ok: false, error: "Pick both a form and an item." };
+  if (!facilityId || !formId) {
+    return { ok: false, error: "Pick both a form and a facility." };
   }
   const lat = Number.parseFloat(String(form.get("capturedLat") ?? ""));
   const lng = Number.parseFloat(String(form.get("capturedLng") ?? ""));
@@ -71,7 +71,7 @@ export async function action({ request }: Route.ActionArgs) {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        itemId,
+        facilityId,
         formId,
         capturedLat: hasCoords ? lat : undefined,
         capturedLng: hasCoords ? lng : undefined,
@@ -111,7 +111,7 @@ function InspectionRow({ row }: { row: InspectionListRow }) {
             to={`/app/inspections/${row.id}`}
             className="truncate text-lg hover:underline"
           >
-            {row.itemName ?? "—"}
+            {row.facilityName ?? "—"}
           </Link>
           <StatusBadge status={row.status} />
         </div>
@@ -137,21 +137,21 @@ function InspectionRow({ row }: { row: InspectionListRow }) {
 
 function NewInspectionDialog({
   forms,
-  items,
+  facilities,
 }: {
   forms: Form[];
-  items: Item[];
+  facilities: FacilityListRow[];
 }) {
   const fetcher = useFetcher<typeof action>();
   const [open, setOpen] = useState(false);
   const [formId, setFormId] = useState("");
-  const [itemId, setItemId] = useState("");
+  const [facilityId, setFacilityId] = useState("");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
     null,
   );
   const [locating, setLocating] = useState(false);
   const busy = fetcher.state !== "idle";
-  const ready = forms.length > 0 && items.length > 0;
+  const ready = forms.length > 0 && facilities.length > 0;
 
   // Try to grab location as soon as the dialog opens — it's best-effort.
   useEffect(() => {
@@ -180,7 +180,7 @@ function NewInspectionDialog({
         <DialogHeader>
           <DialogTitle>Start an inspection</DialogTitle>
           <DialogDescription>
-            Choose the form to inspect against and the item being inspected.
+            Choose the form to inspect against and the facility being inspected.
           </DialogDescription>
         </DialogHeader>
         {!ready ? (
@@ -191,14 +191,14 @@ function NewInspectionDialog({
             </Link>{" "}
             and one{" "}
             <Link to="/app" className="underline">
-              item
+              facility
             </Link>{" "}
             first.
           </p>
         ) : (
           <fetcher.Form method="post" className="space-y-4">
             <input type="hidden" name="formId" value={formId} />
-            <input type="hidden" name="itemId" value={itemId} />
+            <input type="hidden" name="facilityId" value={facilityId} />
             {coords && (
               <>
                 <input type="hidden" name="capturedLat" value={coords.lat} />
@@ -221,15 +221,16 @@ function NewInspectionDialog({
               </Select>
             </div>
             <div>
-              <Label>Item</Label>
-              <Select value={itemId} onValueChange={setItemId}>
+              <Label>Facility</Label>
+              <Select value={facilityId} onValueChange={setFacilityId}>
                 <SelectTrigger className="mt-1.5">
-                  <SelectValue placeholder="Pick an item" />
+                  <SelectValue placeholder="Pick a facility" />
                 </SelectTrigger>
                 <SelectContent>
-                  {items.map((i) => (
-                    <SelectItem key={i.id} value={i.id}>
-                      {i.name}
+                  {facilities.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.name}
+                      {f.clientName ? ` · ${f.clientName}` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -243,7 +244,7 @@ function NewInspectionDialog({
                   : "Location unavailable — capture will proceed without it."}
             </p>
             <DialogFooter>
-              <Button type="submit" disabled={busy || !formId || !itemId}>
+              <Button type="submit" disabled={busy || !formId || !facilityId}>
                 {busy ? "Starting…" : "Start inspection"}
               </Button>
             </DialogFooter>
@@ -255,7 +256,7 @@ function NewInspectionDialog({
 }
 
 export default function InspectionsList({ loaderData }: Route.ComponentProps) {
-  const { inspections, forms, items } = loaderData;
+  const { inspections, forms, facilities } = loaderData;
   return (
     <div>
       <div className="flex items-end justify-between">
@@ -266,7 +267,7 @@ export default function InspectionsList({ loaderData }: Route.ComponentProps) {
             Pick a form and an item, walk the checkpoints, get a verdict.
           </p>
         </div>
-        <NewInspectionDialog forms={forms} items={items} />
+        <NewInspectionDialog forms={forms} facilities={facilities} />
       </div>
 
       <div className="rule-perforated mt-6" />
