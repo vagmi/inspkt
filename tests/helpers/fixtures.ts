@@ -1,6 +1,11 @@
 import { env } from "cloudflare:test";
 import { getDb, type Db } from "../../workers/api/db/client";
 import {
+  createFormsRepo,
+  type CheckpointInput,
+  type FormWithCheckpoints,
+} from "../../workers/api/repositories/forms-repo";
+import {
   createItemsRepo,
   type Item,
 } from "../../workers/api/repositories/items-repo";
@@ -53,5 +58,40 @@ export async function makeItem(
     locationLat: overrides.locationLat,
     locationLng: overrides.locationLng,
     locationLabel: overrides.locationLabel,
+  });
+}
+
+export const defaultCheckpoints: CheckpointInput[] = [
+  {
+    prompt: "Condenser coils free of debris",
+    answerType: "pass_fail",
+    severity: "minor",
+    critical: false,
+    photoRequired: false,
+  },
+  {
+    prompt: "Refrigerant pressure",
+    answerType: "numeric",
+    severity: "major",
+    critical: false,
+    photoRequired: false,
+    config: { unit: "psi", okMin: 60, okMax: 80, warnMin: 50, warnMax: 90 },
+  },
+];
+
+export async function makeForm(
+  db: Db,
+  orgId: string,
+  overrides: Partial<{
+    name: string;
+    description: string | null;
+    checkpoints: CheckpointInput[];
+  }> = {},
+): Promise<FormWithCheckpoints> {
+  return createFormsRepo(db).create({
+    orgId,
+    name: overrides.name ?? "Quarterly HVAC Check",
+    description: overrides.description ?? "Standard quarterly rubric",
+    checkpoints: overrides.checkpoints ?? defaultCheckpoints,
   });
 }

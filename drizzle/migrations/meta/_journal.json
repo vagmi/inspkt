@@ -15,6 +15,13 @@
       "when": 1781265294888,
       "tag": "0001_striped_diamondback",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1781278733149,
+      "tag": "0002_tiresome_blacklash",
+      "breakpoints": true
     }
   ]
 }

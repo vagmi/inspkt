@@ -1,4 +1,8 @@
 import { vi } from "vitest";
+import type {
+  Checkpoint,
+  Form,
+} from "../../workers/api/repositories/forms-repo";
 import type { Item } from "../../workers/api/repositories/items-repo";
 import type { Membership } from "../../workers/api/repositories/memberships-repo";
 import type { Organization } from "../../workers/api/repositories/organizations-repo";
@@ -53,6 +57,58 @@ export function mockItemsRepo() {
 }
 
 export function mockItemsService() {
+  return {
+    list: vi.fn(),
+    get: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  };
+}
+
+export function fakeForm(overrides: Partial<Form> = {}): Form {
+  return {
+    id: "form_1",
+    orgId: "org_test_1",
+    name: "Quarterly HVAC Check",
+    description: "Standard quarterly rubric",
+    createdAt: 1_700_000_000,
+    updatedAt: 1_700_000_000,
+    ...overrides,
+  };
+}
+
+export function fakeCheckpoint(overrides: Partial<Checkpoint> = {}): Checkpoint {
+  return {
+    id: "cp_1",
+    formId: "form_1",
+    orgId: "org_test_1",
+    position: 0,
+    section: null,
+    prompt: "Condenser coils free of debris",
+    answerType: "pass_fail",
+    severity: "minor",
+    critical: false,
+    photoRequired: false,
+    config: null,
+    createdAt: 1_700_000_000,
+    updatedAt: 1_700_000_000,
+    ...overrides,
+  };
+}
+
+export function mockFormsRepo() {
+  return {
+    create: vi.fn(),
+    getById: vi.fn(),
+    listByOrg: vi.fn(),
+    countByOrg: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  };
+}
+
+export function mockFormsService() {
   return {
     list: vi.fn(),
     get: vi.fn(),

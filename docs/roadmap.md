@@ -46,7 +46,7 @@ tests in `tests/repositories|services|controllers`.
 **Done when:** sign in → register an item with name, category, location → see
 it in the list; `pnpm test` green; deploys.
 
-### [ ] Phase 2 — Inspection form builder
+### [x] Phase 2 — Inspection form builder
 **Goal:** a form author can create a reusable rubric: named form with ordered
 checkpoints grouped into sections.
 **Slice:** schema `forms` + `checkpoints` (answer type: pass-fail / numeric
