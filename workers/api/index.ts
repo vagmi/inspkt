@@ -2,6 +2,8 @@ import { clerkMiddleware } from "@clerk/hono";
 import { Hono } from "hono";
 import { domainErrorHandler } from "./controllers/error-handler";
 import { createClientsController } from "./controllers/clients-controller";
+import { createEquipmentController } from "./controllers/equipment-controller";
+import { createEquipmentTypesController } from "./controllers/equipment-types-controller";
 import { createFacilitiesController } from "./controllers/facilities-controller";
 import { createFormsController } from "./controllers/forms-controller";
 import { createInspectionsController } from "./controllers/inspections-controller";
@@ -53,6 +55,8 @@ export function createApi() {
   );
   authed.route("/facilities", createFacilitiesController());
   authed.route("/clients", createClientsController());
+  authed.route("/equipment-types", createEquipmentTypesController());
+  authed.route("/equipment", createEquipmentController());
   authed.route("/forms", createFormsController());
   authed.route("/inspections", createInspectionsController());
   authed.route("/uploads", createUploadsController());

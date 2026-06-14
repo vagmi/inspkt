@@ -39,6 +39,8 @@ const NAV = [
   { to: "/app/inspections", label: "Inspections", end: false, show: can.inspect },
   { to: "/app", label: "Facilities", end: true, show: can.setup },
   { to: "/app/clients", label: "Clients", end: false, show: can.setup },
+  { to: "/app/equipment", label: "Equipment", end: false, show: can.setup },
+  { to: "/app/equipment-types", label: "Types", end: false, show: can.setup },
   { to: "/app/forms", label: "Forms", end: false, show: can.setup },
   { to: "/app/members", label: "Members", end: false, show: can.viewMembers },
 ] as const satisfies ReadonlyArray<{

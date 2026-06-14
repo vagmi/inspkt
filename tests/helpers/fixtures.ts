@@ -5,6 +5,14 @@ import {
   type Client,
 } from "../../workers/api/repositories/clients-repo";
 import {
+  createEquipmentRepo,
+  type Equipment,
+} from "../../workers/api/repositories/equipment-repo";
+import {
+  createEquipmentTypesRepo,
+  type EquipmentType,
+} from "../../workers/api/repositories/equipment-types-repo";
+import {
   createFormsRepo,
   type CheckpointInput,
   type FormWithCheckpoints,
@@ -166,5 +174,46 @@ export async function makeClient(
     contactEmail: overrides.contactEmail,
     contactPhone: overrides.contactPhone,
     notes: overrides.notes,
+  });
+}
+
+export async function makeEquipmentType(
+  db: Db,
+  orgId: string,
+  overrides: Partial<{
+    name: string;
+    formIds: string[];
+    description: string | null;
+  }> = {},
+): Promise<EquipmentType> {
+  // A type needs at least one form; create one if the caller didn't supply ids.
+  const formIds = overrides.formIds ?? [(await makeForm(db, orgId)).id];
+  return createEquipmentTypesRepo(db).create({
+    orgId,
+    name: overrides.name ?? "Rooftop HVAC",
+    formIds,
+    description: overrides.description,
+  });
+}
+
+export async function makeEquipment(
+  db: Db,
+  orgId: string,
+  overrides: Partial<{
+    facilityId: string;
+    typeId: string;
+    name: string;
+    identifier: string | null;
+  }> = {},
+): Promise<Equipment> {
+  const facilityId =
+    overrides.facilityId ?? (await makeFacility(db, orgId)).id;
+  const typeId = overrides.typeId ?? (await makeEquipmentType(db, orgId)).id;
+  return createEquipmentRepo(db).create({
+    orgId,
+    facilityId,
+    typeId,
+    name: overrides.name ?? "Unit A-1",
+    identifier: overrides.identifier,
   });
 }

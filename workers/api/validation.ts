@@ -193,6 +193,61 @@ export const clientUpdateSchema = z
 export type ClientCreateInput = z.infer<typeof clientCreateSchema>;
 export type ClientUpdateInput = z.infer<typeof clientUpdateSchema>;
 
+// ---- Equipment types --------------------------------------------------
+
+export const equipmentTypeCreateSchema = z.object({
+  name: z.string().min(1, "name is required").max(200),
+  // Forms are optional — a type can be defined first and have forms attached
+  // later. Defaults to none.
+  formIds: z.array(z.string().min(1)).max(50).default([]),
+  description: z.string().max(2000).optional(),
+});
+
+export const equipmentTypeUpdateSchema = z
+  .object({
+    name: z.string().min(1).max(200).optional(),
+    formIds: z.array(z.string().min(1)).max(50).optional(),
+    description: z.string().max(2000).nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, "no fields to update");
+
+export type EquipmentTypeCreateInput = z.infer<
+  typeof equipmentTypeCreateSchema
+>;
+export type EquipmentTypeUpdateInput = z.infer<
+  typeof equipmentTypeUpdateSchema
+>;
+
+// ---- Equipment --------------------------------------------------------
+
+export const equipmentCreateSchema = z
+  .object({
+    facilityId: z.string().min(1, "a facility is required"),
+    typeId: z.string().min(1, "a type is required"),
+    name: z.string().min(1, "name is required").max(200),
+    identifier: z.string().max(120).optional(),
+    locationLat: z.number().min(-90).max(90).optional(),
+    locationLng: z.number().min(-180).max(180).optional(),
+    locationLabel: z.string().max(300).optional(),
+  })
+  .refine(latLngPair, "locationLat and locationLng must be set together");
+
+export const equipmentUpdateSchema = z
+  .object({
+    facilityId: z.string().min(1).optional(),
+    typeId: z.string().min(1).optional(),
+    name: z.string().min(1).max(200).optional(),
+    identifier: z.string().max(120).nullable().optional(),
+    locationLat: z.number().min(-90).max(90).nullable().optional(),
+    locationLng: z.number().min(-180).max(180).nullable().optional(),
+    locationLabel: z.string().max(300).nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, "no fields to update")
+  .refine(latLngPair, "locationLat and locationLng must be set together");
+
+export type EquipmentCreateInput = z.infer<typeof equipmentCreateSchema>;
+export type EquipmentUpdateInput = z.infer<typeof equipmentUpdateSchema>;
+
 // ---- Members ----------------------------------------------------------
 
 export const memberRoleSchema = z.object({

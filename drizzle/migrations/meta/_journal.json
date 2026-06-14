@@ -50,6 +50,20 @@
       "when": 1781471537145,
       "tag": "0006_faithful_speedball",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1781475090866,
+      "tag": "0007_woozy_misty_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1781476749377,
+      "tag": "0008_yielding_thunderbird",
+      "breakpoints": true
     }
   ]
 }

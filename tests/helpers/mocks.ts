@@ -1,5 +1,7 @@
 import { vi } from "vitest";
 import type { Client } from "../../workers/api/repositories/clients-repo";
+import type { Equipment } from "../../workers/api/repositories/equipment-repo";
+import type { EquipmentType } from "../../workers/api/repositories/equipment-types-repo";
 import type {
   Checkpoint,
   Form,
@@ -220,6 +222,81 @@ export function mockClientsRepo() {
 export function mockClientsService() {
   return {
     list: vi.fn(),
+    get: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  };
+}
+
+export function fakeEquipmentType(
+  overrides: Partial<EquipmentType> = {},
+): EquipmentType {
+  return {
+    id: "type_1",
+    orgId: "org_test_1",
+    name: "Rooftop HVAC",
+    description: null,
+    createdAt: 1_700_000_000,
+    updatedAt: 1_700_000_000,
+    ...overrides,
+  };
+}
+
+export function fakeEquipment(overrides: Partial<Equipment> = {}): Equipment {
+  return {
+    id: "equip_1",
+    orgId: "org_test_1",
+    facilityId: "facility_1",
+    typeId: "type_1",
+    name: "Unit A-1",
+    identifier: null,
+    locationLat: null,
+    locationLng: null,
+    locationLabel: null,
+    createdAt: 1_700_000_000,
+    updatedAt: 1_700_000_000,
+    ...overrides,
+  };
+}
+
+export function mockEquipmentTypesRepo() {
+  return {
+    create: vi.fn(),
+    getById: vi.fn(),
+    listByOrg: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  };
+}
+
+export function mockEquipmentTypesService() {
+  return {
+    list: vi.fn(),
+    get: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  };
+}
+
+export function mockEquipmentRepo() {
+  return {
+    create: vi.fn(),
+    getById: vi.fn(),
+    listByOrg: vi.fn(),
+    listByFacility: vi.fn(),
+    countByOrg: vi.fn(),
+    countByType: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  };
+}
+
+export function mockEquipmentService() {
+  return {
+    list: vi.fn(),
+    listByFacility: vi.fn(),
     get: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),

@@ -1,0 +1,86 @@
+import { describe, expect, it } from "vitest";
+import { createEquipmentTypesRepo } from "../../workers/api/repositories/equipment-types-repo";
+import { makeEquipmentType, makeForm, makeOrg, testDb } from "../helpers/fixtures";
+
+describe("equipment types repo", () => {
+  it("creates a type with several forms (many-to-many), joined in the list", async () => {
+    const db = testDb();
+    await makeOrg(db);
+    const quarterly = await makeForm(db, "org_test_1", { name: "Quarterly" });
+    const annual = await makeForm(db, "org_test_1", { name: "Annual" });
+    const repo = createEquipmentTypesRepo(db);
+    const type = await makeEquipmentType(db, "org_test_1", {
+      formIds: [quarterly.id, annual.id],
+      name: "Rooftop HVAC",
+    });
+
+    expect(type.forms.map((f) => f.name).sort()).toEqual([
+      "Annual",
+      "Quarterly",
+    ]);
+
+    const list = await repo.listByOrg("org_test_1");
+    const row = list.find((t) => t.id === type.id);
+    expect(row?.forms).toHaveLength(2);
+  });
+
+  it("can create a type with no forms, then attach one later", async () => {
+    const db = testDb();
+    const repo = createEquipmentTypesRepo(db);
+    await makeOrg(db, "org_bare");
+    const bare = await repo.create({
+      orgId: "org_bare",
+      name: "Uncategorized",
+      formIds: [],
+    });
+    expect(bare.forms).toHaveLength(0);
+
+    const form = await makeForm(db, "org_bare", { name: "Later" });
+    const updated = await repo.update("org_bare", bare.id, {
+      formIds: [form.id],
+    });
+    expect(updated?.forms.map((f) => f.name)).toEqual(["Later"]);
+  });
+
+  it("reconciles the form set on update", async () => {
+    const db = testDb();
+    const repo = createEquipmentTypesRepo(db);
+    await makeOrg(db, "org_recon_t");
+    const f1 = await makeForm(db, "org_recon_t", { name: "F1" });
+    const f2 = await makeForm(db, "org_recon_t", { name: "F2" });
+    const type = await makeEquipmentType(db, "org_recon_t", {
+      formIds: [f1.id],
+    });
+
+    const updated = await repo.update("org_recon_t", type.id, {
+      formIds: [f2.id],
+    });
+    expect(updated?.forms.map((f) => f.id)).toEqual([f2.id]);
+  });
+
+  it("scopes getById by org", async () => {
+    const db = testDb();
+    const repo = createEquipmentTypesRepo(db);
+    await makeOrg(db, "org_a");
+    await makeOrg(db, "org_b");
+    const type = await makeEquipmentType(db, "org_a");
+
+    expect(await repo.getById("org_a", type.id)).not.toBeNull();
+    expect(await repo.getById("org_b", type.id)).toBeNull();
+  });
+
+  it("updates and deletes scoped by org", async () => {
+    const db = testDb();
+    const repo = createEquipmentTypesRepo(db);
+    await makeOrg(db, "org_a");
+    await makeOrg(db, "org_b");
+    const type = await makeEquipmentType(db, "org_a");
+
+    const updated = await repo.update("org_a", type.id, { name: "Renamed" });
+    expect(updated?.name).toBe("Renamed");
+
+    expect(await repo.delete("org_b", type.id)).toBe(false);
+    expect(await repo.delete("org_a", type.id)).toBe(true);
+    expect(await repo.getById("org_a", type.id)).toBeNull();
+  });
+});

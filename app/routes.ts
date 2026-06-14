@@ -13,6 +13,8 @@ export default [
   route("app", "routes/app/layout.tsx", [
     index("routes/app/facilities-list.tsx"),
     route("clients", "routes/app/clients-list.tsx"),
+    route("equipment", "routes/app/equipment-list.tsx"),
+    route("equipment-types", "routes/app/equipment-types-list.tsx"),
     route("forms", "routes/app/forms-list.tsx"),
     route("forms/:formId", "routes/app/forms-edit.tsx"),
     route("inspections", "routes/app/inspections-list.tsx"),

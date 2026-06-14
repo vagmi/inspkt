@@ -1,5 +1,7 @@
 import { getDb } from "../db/client";
 import { createClientsRepo } from "../repositories/clients-repo";
+import { createEquipmentRepo } from "../repositories/equipment-repo";
+import { createEquipmentTypesRepo } from "../repositories/equipment-types-repo";
 import { createFacilitiesRepo } from "../repositories/facilities-repo";
 import { createFormsRepo } from "../repositories/forms-repo";
 import { createInspectionsRepo } from "../repositories/inspections-repo";
@@ -8,6 +10,8 @@ import { createOrganizationsRepo } from "../repositories/organizations-repo";
 import { createUsageRepo } from "../repositories/usage-repo";
 import { createUsersRepo } from "../repositories/users-repo";
 import { createClientsService } from "./clients-service";
+import { createEquipmentService } from "./equipment-service";
+import { createEquipmentTypesService } from "./equipment-types-service";
 import { createFacilitiesService } from "./facilities-service";
 import { createFormsService } from "./forms-service";
 import { createInspectionsService } from "./inspections-service";
@@ -32,6 +36,8 @@ export function createServices(env: Env) {
   const formsRepo = createFormsRepo(db);
   const inspectionsRepo = createInspectionsRepo(db);
   const clientsRepo = createClientsRepo(db);
+  const equipmentTypesRepo = createEquipmentTypesRepo(db);
+  const equipmentRepo = createEquipmentRepo(db);
 
   return {
     organizations: createOrganizationsService({ orgsRepo }),
@@ -49,6 +55,16 @@ export function createServices(env: Env) {
       formsRepo,
     }),
     clients: createClientsService({ clientsRepo }),
+    equipmentTypes: createEquipmentTypesService({
+      equipmentTypesRepo,
+      equipmentRepo,
+      formsRepo,
+    }),
+    equipment: createEquipmentService({
+      equipmentRepo,
+      facilitiesRepo,
+      equipmentTypesRepo,
+    }),
     uploads: createUploadsService({ bucket: env.UPLOADS }),
   };
 }

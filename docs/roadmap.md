@@ -117,15 +117,29 @@ physically `item_id` (mapped to `facilityId`). A future cosmetic migration can
 rename the physical columns if ever needed; nothing in code references the old
 names.
 
-### [ ] Phase 8 — Equipment + Equipment Types
+### [x] Phase 8 — Equipment + Equipment Types
 **Goal:** register the actual inspectable assets, typed, and link forms to types.
-**Slice:** `equipment_types` (org-scoped taxonomy; **a Form attaches to a
-type** — add `form_id`/`type_id` link) + `equipment` (`facility_id`, `type_id`,
-identifier, optional own geo) → repos/services/controllers → routes: equipment
-list per facility (**DataTable**) + create/edit (**RHF Form** with facility +
-type pickers); a small Types admin screen.
-**Done when:** add a type with its form, add equipment of that type to a
-facility; deploys.
+**Shipped (2026-06-14):** `equipment_types` (org-scoped; each carries its
+`form_id` = the rubric) + `equipment` (`facility_id`, `type_id`, name,
+`identifier`, optional own geo). Repos/services/controllers (writes gated by
+`can.setup`); types-service validates the form belongs to the org and **blocks
+deleting a type still in use**; equipment-service validates facility + type;
+`GET /api/equipment?facilityId=` filters by facility. UI: `/app/equipment-types`
+(**DataTable** + RHF with a form picker) and `/app/equipment` (**DataTable** +
+RHF with facility + type pickers + geolocation). Nav now has Equipment + Types.
+171 tests green; deployed. This completes the **Client → Facility → Equipment
+(of a Type)** hierarchy. → Phase 9 retargets inspections facility → equipment.
+**Correction (2026-06-14): Forms ↔ Types is many-to-many.** A type can have
+several forms and a form can apply to several types, via the
+`equipment_type_forms` join table (replaced the single `equipment_types.form_id`,
+migration 0008). The types screen uses a form **multi-select** (checkboxes); an
+inspection (Phase 9) picks one of its equipment's type's forms. **Forms are
+optional on a type** — define the taxonomy first and attach rubrics later (no
+ordering dependency on Forms). Migration note:
+the column drop is a drizzle table-rebuild whose `PRAGMA foreign_keys=OFF` is a
+no-op inside D1's migration transaction — safe here only because no equipment
+types existed yet (verified empty before deploy); the backfill must precede the
+rebuild. 172 tests green.
 
 ### [ ] Phase 9 — Retarget inspections to Equipment
 **Goal:** inspections are performed against equipment, not bare items.
