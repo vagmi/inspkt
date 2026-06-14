@@ -477,7 +477,7 @@ export default function FormsEdit({ loaderData }: Route.ComponentProps) {
 
   return (
     <div>
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 flex-1">
           <p className="form-label-mono text-muted-foreground">
             <Link to="/app/forms" className="hover:text-foreground">

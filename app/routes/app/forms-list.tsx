@@ -164,7 +164,7 @@ export default function FormsList({ loaderData }: Route.ComponentProps) {
   const { forms } = loaderData;
   return (
     <div>
-      <div className="flex items-end justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="form-label-mono text-muted-foreground">
             Inspection rubrics

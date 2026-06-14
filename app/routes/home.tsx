@@ -144,12 +144,12 @@ function PricingCard({ plan }: { plan: PlanId }) {
 export default function Home() {
   return (
     <div className="min-h-screen">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 py-5">
         <Wordmark />
         <HeaderNav />
       </header>
 
-      <main className="mx-auto max-w-6xl px-6">
+      <main className="mx-auto max-w-6xl px-4 sm:px-6">
         {/* hero */}
         <section className="grid items-center gap-16 py-16 md:grid-cols-[1.1fr_0.9fr] md:py-24">
           <div>
@@ -229,7 +229,7 @@ export default function Home() {
       </main>
 
       <footer className="border-t">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 py-8">
           <Wordmark />
           <p className="form-label-mono text-muted-foreground">
             An opinionated foundation for SaaS

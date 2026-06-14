@@ -1,9 +1,12 @@
 import { OrganizationSwitcher, UserButton } from "@clerk/react-router";
 import { getAuth } from "@clerk/react-router/server";
+import { Menu, X } from "lucide-react";
+import { useState } from "react";
 import { Link, NavLink, Outlet, redirect } from "react-router";
 import { Toaster } from "~/components/ui/sonner";
-import { actorFromRole, can } from "~/lib/capabilities";
+import { actorFromRole, can, type Actor } from "~/lib/capabilities";
 import { apiFetch } from "~/lib/api-client.server";
+import { cn } from "~/lib/utils";
 import type { Route } from "./+types/layout";
 
 export async function loader(args: Route.LoaderArgs) {
@@ -31,8 +34,6 @@ function Wordmark() {
   );
 }
 
-import type { Actor } from "~/lib/capabilities";
-
 // Each nav item declares the capability that reveals it, so the nav is the
 // "mode": inspectors see only their work; managers/admins see setup too.
 const NAV = [
@@ -50,41 +51,94 @@ const NAV = [
   show: (a: Actor) => boolean;
 }>;
 
+function navLinkClass({ isActive }: { isActive: boolean }) {
+  return isActive
+    ? "text-stamp underline decoration-dashed underline-offset-8"
+    : "text-muted-foreground transition-colors hover:text-foreground";
+}
+
 export default function AppLayout({ loaderData }: Route.ComponentProps) {
   const actor = actorFromRole(loaderData.role);
   const nav = NAV.filter((item) => item.show(actor));
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen">
       <header className="border-b bg-card/60">
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-8 px-6">
+        <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6 lg:gap-8">
+          {/* Hamburger — small screens only */}
+          <button
+            type="button"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label="Toggle navigation"
+            aria-expanded={menuOpen}
+            className="text-muted-foreground hover:text-foreground -ml-1 lg:hidden"
+          >
+            {menuOpen ? (
+              <X className="size-5" />
+            ) : (
+              <Menu className="size-5" />
+            )}
+          </button>
+
           <Wordmark />
-          <nav className="form-label-mono flex items-center gap-6">
+
+          {/* Inline nav — large screens only */}
+          <nav className="form-label-mono hidden items-center gap-6 lg:flex">
             {nav.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.end}
-                className={({ isActive }) =>
-                  isActive
-                    ? "text-stamp underline decoration-dashed underline-offset-8"
-                    : "text-muted-foreground transition-colors hover:text-foreground"
-                }
+                className={navLinkClass}
               >
                 {item.label}
               </NavLink>
             ))}
           </nav>
-          <div className="ml-auto flex items-center gap-4">
-            <OrganizationSwitcher
-              hidePersonal
-              afterCreateOrganizationUrl="/app"
-              afterSelectOrganizationUrl="/app"
-            />
+
+          <div className="ml-auto flex items-center gap-3 sm:gap-4">
+            <div className="hidden sm:block">
+              <OrganizationSwitcher
+                hidePersonal
+                afterCreateOrganizationUrl="/app"
+                afterSelectOrganizationUrl="/app"
+              />
+            </div>
             <UserButton />
           </div>
         </div>
+
+        {/* Collapsible nav panel — small screens only */}
+        <div
+          className={cn(
+            "border-t lg:hidden",
+            menuOpen ? "block" : "hidden",
+          )}
+        >
+          <nav className="form-label-mono mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
+            {nav.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                onClick={() => setMenuOpen(false)}
+                className={(state) => cn(navLinkClass(state), "py-1.5")}
+              >
+                {item.label}
+              </NavLink>
+            ))}
+            <div className="mt-2 border-t pt-3 sm:hidden">
+              <OrganizationSwitcher
+                hidePersonal
+                afterCreateOrganizationUrl="/app"
+                afterSelectOrganizationUrl="/app"
+              />
+            </div>
+          </nav>
+        </div>
       </header>
-      <main className="mx-auto max-w-6xl px-6 py-10">
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
         <Outlet />
       </main>
       <Toaster position="bottom-right" />
