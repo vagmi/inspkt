@@ -1,6 +1,10 @@
 import { env } from "cloudflare:test";
 import { getDb, type Db } from "../../workers/api/db/client";
 import {
+  createClientsRepo,
+  type Client,
+} from "../../workers/api/repositories/clients-repo";
+import {
   createFormsRepo,
   type CheckpointInput,
   type FormWithCheckpoints,
@@ -137,4 +141,25 @@ export async function makeInspection(
     capturedLng: opts.capturedLng,
   });
   return { inspection, itemId, formId: form.id, form, inspectorUserId };
+}
+
+export async function makeClient(
+  db: Db,
+  orgId: string,
+  overrides: Partial<{
+    name: string;
+    contactName: string | null;
+    contactEmail: string | null;
+    contactPhone: string | null;
+    notes: string | null;
+  }> = {},
+): Promise<Client> {
+  return createClientsRepo(db).create({
+    orgId,
+    name: overrides.name ?? "Acme Properties",
+    contactName: overrides.contactName,
+    contactEmail: overrides.contactEmail,
+    contactPhone: overrides.contactPhone,
+    notes: overrides.notes,
+  });
 }

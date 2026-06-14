@@ -90,14 +90,15 @@ auth/identity seam moves, not the authz model.
   change roles.
 - 133 tests green; deployed.
 
-### [ ] Phase 6 — Clients
+### [x] Phase 6 — Clients
 **Goal:** admins/managers onboard the customers the org inspects for.
-**Slice:** `clients` table (org-scoped: name, contact, notes) → clients-repo →
-clients-service (plan gate later) → clients-controller (zod) → routes:
-`clients-list.tsx` (**DataTable**) + create/edit (**RHF Form**), admin/manager
-gated. Mirror tests at every layer.
-**Done when:** create a client, see it in a sortable/searchable table, edit it;
-deploys.
+**Shipped (2026-06-14):** `clients` table (org-scoped: name, contact
+name/email/phone, notes) → clients-repo → clients-service → clients-controller
+(reads open to members; writes gated by `can.setup`) → `clients-list.tsx`. This
+is the **first slice on the new UI foundation**: the list uses the TanStack
+**DataTable** (sort + search + paginate) and create/edit uses **react-hook-form
++ zodResolver** with the shared shadcn `Form` components. Inspector access
+redirects to their work. 149 tests green; deployed.
 
 ### [ ] Phase 7 — Facilities (evolve `items`)
 **Goal:** facilities belong to a client; today's items become facilities.

@@ -1,4 +1,5 @@
 import { vi } from "vitest";
+import type { Client } from "../../workers/api/repositories/clients-repo";
 import type {
   Checkpoint,
   Form,
@@ -185,6 +186,42 @@ export function mockInspectionsService() {
 export function mockUploadsService() {
   return {
     put: vi.fn(),
+    delete: vi.fn(),
+  };
+}
+
+export function fakeClient(overrides: Partial<Client> = {}): Client {
+  return {
+    id: "client_1",
+    orgId: "org_test_1",
+    name: "Acme Properties",
+    contactName: null,
+    contactEmail: null,
+    contactPhone: null,
+    notes: null,
+    createdAt: 1_700_000_000,
+    updatedAt: 1_700_000_000,
+    ...overrides,
+  };
+}
+
+export function mockClientsRepo() {
+  return {
+    create: vi.fn(),
+    getById: vi.fn(),
+    listByOrg: vi.fn(),
+    countByOrg: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  };
+}
+
+export function mockClientsService() {
+  return {
+    list: vi.fn(),
+    get: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
     delete: vi.fn(),
   };
 }

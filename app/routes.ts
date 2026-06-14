@@ -12,6 +12,7 @@ export default [
   // Org-scoped dashboard. Add your own resource routes alongside `items`.
   route("app", "routes/app/layout.tsx", [
     index("routes/app/items-list.tsx"),
+    route("clients", "routes/app/clients-list.tsx"),
     route("forms", "routes/app/forms-list.tsx"),
     route("forms/:formId", "routes/app/forms-edit.tsx"),
     route("inspections", "routes/app/inspections-list.tsx"),

@@ -161,6 +161,36 @@ export const inspectionSaveSchema = z.object({
 export type InspectionCreateInput = z.infer<typeof inspectionCreateSchema>;
 export type InspectionSaveInput = z.infer<typeof inspectionSaveSchema>;
 
+// ---- Clients ----------------------------------------------------------
+
+const clientFields = {
+  contactName: z.string().max(200),
+  contactEmail: z.string().email("must be a valid email").max(200),
+  contactPhone: z.string().max(50),
+  notes: z.string().max(2000),
+};
+
+export const clientCreateSchema = z.object({
+  name: z.string().min(1, "name is required").max(200),
+  contactName: clientFields.contactName.optional(),
+  contactEmail: clientFields.contactEmail.optional(),
+  contactPhone: clientFields.contactPhone.optional(),
+  notes: clientFields.notes.optional(),
+});
+
+export const clientUpdateSchema = z
+  .object({
+    name: z.string().min(1).max(200).optional(),
+    contactName: clientFields.contactName.nullable().optional(),
+    contactEmail: clientFields.contactEmail.nullable().optional(),
+    contactPhone: clientFields.contactPhone.nullable().optional(),
+    notes: clientFields.notes.nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, "no fields to update");
+
+export type ClientCreateInput = z.infer<typeof clientCreateSchema>;
+export type ClientUpdateInput = z.infer<typeof clientUpdateSchema>;
+
 // ---- Members ----------------------------------------------------------
 
 export const memberRoleSchema = z.object({

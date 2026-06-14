@@ -36,6 +36,13 @@
       "when": 1781550000000,
       "tag": "0004_app_owned_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1781469605869,
+      "tag": "0005_needy_leader",
+      "breakpoints": true
     }
   ]
 }

@@ -38,6 +38,7 @@ import type { Actor } from "~/lib/capabilities";
 const NAV = [
   { to: "/app/inspections", label: "Inspections", end: false, show: can.inspect },
   { to: "/app", label: "Items", end: true, show: can.setup },
+  { to: "/app/clients", label: "Clients", end: false, show: can.setup },
   { to: "/app/forms", label: "Forms", end: false, show: can.setup },
   { to: "/app/members", label: "Members", end: false, show: can.viewMembers },
 ] as const satisfies ReadonlyArray<{
