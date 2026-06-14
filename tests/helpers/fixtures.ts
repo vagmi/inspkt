@@ -6,6 +6,10 @@ import {
   type FormWithCheckpoints,
 } from "../../workers/api/repositories/forms-repo";
 import {
+  createInspectionsRepo,
+  type InspectionWithObservations,
+} from "../../workers/api/repositories/inspections-repo";
+import {
   createItemsRepo,
   type Item,
 } from "../../workers/api/repositories/items-repo";
@@ -94,4 +98,43 @@ export async function makeForm(
     description: overrides.description ?? "Standard quarterly rubric",
     checkpoints: overrides.checkpoints ?? defaultCheckpoints,
   });
+}
+
+/** Create a draft inspection wired to a fresh item, form, and inspector.
+ * Returns the inspection plus the ids it references, so tests can drive the
+ * observation/submit flow. */
+export async function makeInspection(
+  db: Db,
+  orgId: string,
+  opts: {
+    inspectorUserId?: string;
+    itemId?: string;
+    formId?: string;
+    checkpoints?: CheckpointInput[];
+    capturedLat?: number | null;
+    capturedLng?: number | null;
+  } = {},
+): Promise<{
+  inspection: InspectionWithObservations;
+  itemId: string;
+  formId: string;
+  form: FormWithCheckpoints;
+  inspectorUserId: string;
+}> {
+  const inspectorUserId = opts.inspectorUserId ?? "user_test_1";
+  await makeUser(db, inspectorUserId);
+  const itemId = opts.itemId ?? (await makeItem(db, orgId)).id;
+  const form =
+    opts.formId !== undefined
+      ? (await createFormsRepo(db).getById(orgId, opts.formId))!
+      : await makeForm(db, orgId, { checkpoints: opts.checkpoints });
+  const inspection = await createInspectionsRepo(db).create({
+    orgId,
+    itemId,
+    formId: form.id,
+    inspectorUserId,
+    capturedLat: opts.capturedLat,
+    capturedLng: opts.capturedLng,
+  });
+  return { inspection, itemId, formId: form.id, form, inspectorUserId };
 }

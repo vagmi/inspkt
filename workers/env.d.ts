@@ -9,4 +9,7 @@ interface Env {
   CLERK_PUBLISHABLE_KEY: string;
   CLERK_WEBHOOK_SECRET: string;
   APP_URL: string;
+  // r2-uploads (Phase 3): the UPLOADS R2Bucket binding is typed by
+  // `wrangler types`. The bucket is PRIVATE — photos are served through the
+  // authenticated /api/uploads/:key route, so there is no public base URL.
 }

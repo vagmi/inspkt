@@ -112,3 +112,51 @@ export const formUpdateSchema = z
 export type CheckpointInputParsed = z.infer<typeof checkpointSchema>;
 export type FormCreateInput = z.infer<typeof formCreateSchema>;
 export type FormUpdateInput = z.infer<typeof formUpdateSchema>;
+
+// ---- Inspections & observations ---------------------------------------
+
+const capturedLatLngPair = (v: {
+  capturedLat?: number | null;
+  capturedLng?: number | null;
+}) => (v.capturedLat == null) === (v.capturedLng == null);
+
+export const inspectionCreateSchema = z
+  .object({
+    itemId: z.string().min(1),
+    formId: z.string().min(1),
+    capturedLat: z.number().min(-90).max(90).optional(),
+    capturedLng: z.number().min(-180).max(180).optional(),
+  })
+  .refine(
+    capturedLatLngPair,
+    "capturedLat and capturedLng must be set together",
+  );
+
+/** An answer mirrors its checkpoint's type; the walker omits it until answered. */
+const observationAnswerSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("pass_fail"), pass: z.boolean() }),
+  z.object({ type: z.literal("numeric"), value: z.number() }),
+  z.object({ type: z.literal("rating"), value: z.number().int() }),
+  z.object({ type: z.literal("observation") }),
+]);
+
+const observationInputSchema = z
+  .object({
+    checkpointId: z.string().min(1),
+    answer: observationAnswerSchema.nullable().optional(),
+    note: z.string().max(2000).nullable().optional(),
+    photoKeys: z.array(z.string().max(300)).max(20).nullable().optional(),
+    capturedLat: z.number().min(-90).max(90).nullable().optional(),
+    capturedLng: z.number().min(-180).max(180).nullable().optional(),
+  })
+  .refine(
+    (v) => (v.capturedLat == null) === (v.capturedLng == null),
+    "capturedLat and capturedLng must be set together",
+  );
+
+export const inspectionSaveSchema = z.object({
+  observations: z.array(observationInputSchema).max(500).default([]),
+});
+
+export type InspectionCreateInput = z.infer<typeof inspectionCreateSchema>;
+export type InspectionSaveInput = z.infer<typeof inspectionSaveSchema>;

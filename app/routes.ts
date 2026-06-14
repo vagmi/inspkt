@@ -14,6 +14,8 @@ export default [
     index("routes/app/items-list.tsx"),
     route("forms", "routes/app/forms-list.tsx"),
     route("forms/:formId", "routes/app/forms-edit.tsx"),
+    route("inspections", "routes/app/inspections-list.tsx"),
+    route("inspections/:inspectionId", "routes/app/inspection-capture.tsx"),
     route("members", "routes/app/members.tsx"),
   ]),
 ] satisfies RouteConfig;

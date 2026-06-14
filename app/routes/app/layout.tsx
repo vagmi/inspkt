@@ -28,6 +28,7 @@ function Wordmark() {
 }
 
 const NAV = [
+  { to: "/app/inspections", label: "Inspections", end: false },
   { to: "/app", label: "Items", end: true },
   { to: "/app/forms", label: "Forms", end: false },
   { to: "/app/members", label: "Members", end: false },

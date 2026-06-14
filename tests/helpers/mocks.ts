@@ -3,6 +3,10 @@ import type {
   Checkpoint,
   Form,
 } from "../../workers/api/repositories/forms-repo";
+import type {
+  Inspection,
+  Observation,
+} from "../../workers/api/repositories/inspections-repo";
 import type { Item } from "../../workers/api/repositories/items-repo";
 import type { Membership } from "../../workers/api/repositories/memberships-repo";
 import type { Organization } from "../../workers/api/repositories/organizations-repo";
@@ -114,6 +118,73 @@ export function mockFormsService() {
     get: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    delete: vi.fn(),
+  };
+}
+
+export function fakeInspection(
+  overrides: Partial<Inspection> = {},
+): Inspection {
+  return {
+    id: "insp_1",
+    orgId: "org_test_1",
+    itemId: "item_1",
+    formId: "form_1",
+    inspectorUserId: "user_test_1",
+    status: "draft",
+    capturedLat: null,
+    capturedLng: null,
+    submittedAt: null,
+    createdAt: 1_700_000_000,
+    updatedAt: 1_700_000_000,
+    ...overrides,
+  };
+}
+
+export function fakeObservation(
+  overrides: Partial<Observation> = {},
+): Observation {
+  return {
+    id: "obs_1",
+    orgId: "org_test_1",
+    inspectionId: "insp_1",
+    checkpointId: "cp_1",
+    answer: { type: "pass_fail", pass: true },
+    note: null,
+    photoKeys: null,
+    capturedLat: null,
+    capturedLng: null,
+    createdAt: 1_700_000_000,
+    updatedAt: 1_700_000_000,
+    ...overrides,
+  };
+}
+
+export function mockInspectionsRepo() {
+  return {
+    create: vi.fn(),
+    getById: vi.fn(),
+    listByOrg: vi.fn(),
+    saveObservations: vi.fn(),
+    markSubmitted: vi.fn(),
+    delete: vi.fn(),
+  };
+}
+
+export function mockInspectionsService() {
+  return {
+    list: vi.fn(),
+    get: vi.fn(),
+    create: vi.fn(),
+    saveDraft: vi.fn(),
+    submit: vi.fn(),
+    delete: vi.fn(),
+  };
+}
+
+export function mockUploadsService() {
+  return {
+    put: vi.fn(),
     delete: vi.fn(),
   };
 }

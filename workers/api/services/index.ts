@@ -1,12 +1,15 @@
 import { getDb } from "../db/client";
 import { createFormsRepo } from "../repositories/forms-repo";
+import { createInspectionsRepo } from "../repositories/inspections-repo";
 import { createItemsRepo } from "../repositories/items-repo";
 import { createMembershipsRepo } from "../repositories/memberships-repo";
 import { createOrganizationsRepo } from "../repositories/organizations-repo";
 import { createUsageRepo } from "../repositories/usage-repo";
 import { createUsersRepo } from "../repositories/users-repo";
 import { createFormsService } from "./forms-service";
+import { createInspectionsService } from "./inspections-service";
 import { createItemsService } from "./items-service";
+import { createUploadsService } from "./uploads-service";
 import { createMembersService } from "./members-service";
 import { createOrganizationsService } from "./organizations-service";
 import { createUsersService } from "./users-service";
@@ -25,6 +28,7 @@ export function createServices(env: Env) {
   const usageRepo = createUsageRepo(db);
   const itemsRepo = createItemsRepo(db);
   const formsRepo = createFormsRepo(db);
+  const inspectionsRepo = createInspectionsRepo(db);
 
   return {
     organizations: createOrganizationsService({ orgsRepo }),
@@ -32,6 +36,12 @@ export function createServices(env: Env) {
     members: createMembersService({ membershipsRepo, usersRepo }),
     items: createItemsService({ itemsRepo, usageRepo }),
     forms: createFormsService({ formsRepo }),
+    inspections: createInspectionsService({
+      inspectionsRepo,
+      itemsRepo,
+      formsRepo,
+    }),
+    uploads: createUploadsService({ bucket: env.UPLOADS }),
   };
 }
 
