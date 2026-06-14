@@ -27,7 +27,12 @@ function json(body: unknown, method = "POST"): RequestInit {
   };
 }
 
-const valid = { facilityId: "facility_1", typeId: "type_1", name: "Unit A-1" };
+const valid = {
+  clientId: "client_1",
+  facilityId: "facility_1",
+  typeId: "type_1",
+  name: "Unit A-1",
+};
 
 describe("equipment controller", () => {
   it("GET lists all for any member", async () => {
@@ -51,6 +56,17 @@ describe("equipment controller", () => {
     );
   });
 
+  it("GET ?clientId= filters by client", async () => {
+    const { app, equipment } = makeApp("inspector");
+    equipment.listByClient.mockResolvedValue([]);
+    const res = await app.request("/equipment?clientId=client_9");
+    expect(res.status).toBe(200);
+    expect(equipment.listByClient).toHaveBeenCalledWith(
+      "org_test_1",
+      "client_9",
+    );
+  });
+
   it("POST creates (admin) returns 201", async () => {
     const { app, equipment } = makeApp("admin");
     equipment.create.mockResolvedValue(fakeEquipment());
@@ -66,13 +82,38 @@ describe("equipment controller", () => {
     expect(equipment.create).not.toHaveBeenCalled();
   });
 
+  it("POST 400s without a client", async () => {
+    const { app, equipment } = makeApp("admin");
+    const res = await app.request(
+      "/equipment",
+      json({ typeId: "type_1", name: "No client" }),
+    );
+    expect(res.status).toBe(400);
+    expect(equipment.create).not.toHaveBeenCalled();
+  });
+
   it("POST 400s without a type", async () => {
     const { app } = makeApp("admin");
     const res = await app.request(
       "/equipment",
-      json({ facilityId: "facility_1", name: "No type" }),
+      json({ clientId: "client_1", name: "No type" }),
     );
     expect(res.status).toBe(400);
+  });
+
+  it("POST allows equipment with no facility (mobile asset)", async () => {
+    const { app, equipment } = makeApp("admin");
+    equipment.create.mockResolvedValue(fakeEquipment({ facilityId: null }));
+    const res = await app.request(
+      "/equipment",
+      json({ clientId: "client_1", typeId: "type_1", name: "Service Van" }),
+    );
+    expect(res.status).toBe(201);
+    expect(equipment.create).toHaveBeenCalledWith("org_test_1", {
+      clientId: "client_1",
+      typeId: "type_1",
+      name: "Service Van",
+    });
   });
 
   it("POST maps a bad facility/type to 404", async () => {

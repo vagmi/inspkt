@@ -6,6 +6,7 @@ import {
   sqliteTable,
   text,
 } from "drizzle-orm/sqlite-core";
+import { clients } from "./clients";
 import { facilities } from "./facilities";
 import { forms } from "./forms";
 import { now } from "./helpers";
@@ -52,9 +53,10 @@ export const equipmentTypeForms = sqliteTable(
   ],
 );
 
-/** A piece of equipment: the actual inspectable asset, of a given type, sitting
- * at a facility. Carries an optional own location (falls back to the
- * facility's when comparing against a captured inspection location). */
+/** A piece of equipment: the actual inspectable asset, of a given type.
+ * Usually sits at a facility, but a mobile asset (service truck, van) may have
+ * none — `facilityId` is optional. Carries an optional own location (falls back
+ * to the facility's, when it has one, for inspection location comparison). */
 export const equipment = sqliteTable(
   "equipment",
   {
@@ -62,9 +64,12 @@ export const equipment = sqliteTable(
     orgId: text("org_id")
       .notNull()
       .references(() => organizations.id),
-    facilityId: text("facility_id")
-      .notNull()
-      .references(() => facilities.id),
+    /** The owning client. Nullable at the DB level only (added by migration);
+     * the app requires it on create. Someone always owns the equipment. */
+    clientId: text("client_id").references(() => clients.id),
+    /** Optional — mobile equipment (van, truck) isn't tied to a facility. When
+     * set, the facility must belong to the same client. */
+    facilityId: text("facility_id").references(() => facilities.id),
     typeId: text("type_id")
       .notNull()
       .references(() => equipmentTypes.id),
@@ -79,6 +84,7 @@ export const equipment = sqliteTable(
   },
   (t) => [
     index("equipment_org_id_idx").on(t.orgId),
+    index("equipment_client_id_idx").on(t.clientId),
     index("equipment_facility_id_idx").on(t.facilityId),
     index("equipment_type_id_idx").on(t.typeId),
   ],

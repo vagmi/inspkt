@@ -64,6 +64,20 @@
       "when": 1781476749377,
       "tag": "0008_yielding_thunderbird",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1781480234429,
+      "tag": "0009_stale_living_mummy",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1781480920776,
+      "tag": "0010_giant_rockslide",
+      "breakpoints": true
     }
   ]
 }

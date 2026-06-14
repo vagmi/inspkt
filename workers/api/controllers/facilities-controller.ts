@@ -11,7 +11,10 @@ export function createFacilitiesController() {
   const app = new Hono<ApiEnv>();
 
   app.get("/", async (c) => {
-    const facilities = await c.var.services.facilities.list(c.var.orgId);
+    const clientId = c.req.query("clientId");
+    const facilities = clientId
+      ? await c.var.services.facilities.listByClient(c.var.orgId, clientId)
+      : await c.var.services.facilities.list(c.var.orgId);
     return c.json({ facilities });
   });
 

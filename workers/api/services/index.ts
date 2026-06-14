@@ -62,6 +62,7 @@ export function createServices(env: Env) {
     }),
     equipment: createEquipmentService({
       equipmentRepo,
+      clientsRepo,
       facilitiesRepo,
       equipmentTypesRepo,
     }),

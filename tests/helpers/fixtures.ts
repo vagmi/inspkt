@@ -200,17 +200,25 @@ export async function makeEquipment(
   db: Db,
   orgId: string,
   overrides: Partial<{
-    facilityId: string;
+    clientId: string;
+    facilityId: string | null;
     typeId: string;
     name: string;
     identifier: string | null;
   }> = {},
 ): Promise<Equipment> {
+  // Equipment is owned by a client; create one if not supplied.
+  const clientId = overrides.clientId ?? (await makeClient(db, orgId)).id;
+  // Explicit `facilityId: null` means a mobile asset; omitting it creates a
+  // default facility under the same client.
   const facilityId =
-    overrides.facilityId ?? (await makeFacility(db, orgId)).id;
+    "facilityId" in overrides
+      ? overrides.facilityId
+      : (await makeFacility(db, orgId, { clientId })).id;
   const typeId = overrides.typeId ?? (await makeEquipmentType(db, orgId)).id;
   return createEquipmentRepo(db).create({
     orgId,
+    clientId,
     facilityId,
     typeId,
     name: overrides.name ?? "Unit A-1",

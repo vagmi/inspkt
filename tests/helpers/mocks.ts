@@ -67,6 +67,7 @@ export function mockFacilitiesRepo() {
 export function mockFacilitiesService() {
   return {
     list: vi.fn(),
+    listByClient: vi.fn(),
     get: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
@@ -247,6 +248,7 @@ export function fakeEquipment(overrides: Partial<Equipment> = {}): Equipment {
   return {
     id: "equip_1",
     orgId: "org_test_1",
+    clientId: "client_1",
     facilityId: "facility_1",
     typeId: "type_1",
     name: "Unit A-1",
@@ -297,6 +299,7 @@ export function mockEquipmentService() {
   return {
     list: vi.fn(),
     listByFacility: vi.fn(),
+    listByClient: vi.fn(),
     get: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),

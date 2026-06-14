@@ -1,22 +1,26 @@
 import { and, desc, eq } from "drizzle-orm";
 import { newId } from "~/lib/id";
 import type { Db } from "../db/client";
-import { equipment, equipmentTypes, facilities } from "../db/schema";
+import { clients, equipment, equipmentTypes, facilities } from "../db/schema";
 import { now } from "../db/schema/helpers";
 
-// Org-scoped equipment: the inspectable assets, each at a facility and of a type.
+// Org-scoped equipment: the inspectable assets, each owned by a client,
+// optionally at a facility, of a type.
 
 export type Equipment = typeof equipment.$inferSelect;
 
-/** An equipment row with its facility + type names joined, for list views. */
+/** An equipment row with its client / facility / type names joined. */
 export interface EquipmentListRow extends Equipment {
+  clientName: string | null;
   facilityName: string | null;
   typeName: string | null;
 }
 
 export interface EquipmentCreate {
   orgId: string;
-  facilityId: string;
+  clientId: string;
+  /** Optional — mobile equipment has no facility (but still has a client). */
+  facilityId?: string | null;
   typeId: string;
   name: string;
   identifier?: string | null;
@@ -26,7 +30,8 @@ export interface EquipmentCreate {
 }
 
 export interface EquipmentUpdate {
-  facilityId?: string;
+  clientId?: string;
+  facilityId?: string | null;
   typeId?: string;
   name?: string;
   identifier?: string | null;
@@ -38,18 +43,31 @@ export interface EquipmentUpdate {
 export function createEquipmentRepo(db: Db) {
   const withNames = {
     equipment,
+    clientName: clients.name,
     facilityName: facilities.name,
     typeName: equipmentTypes.name,
   };
 
-  function joined(orgId: string) {
+  function selectJoined() {
     return db
       .select(withNames)
       .from(equipment)
+      .leftJoin(clients, eq(equipment.clientId, clients.id))
       .leftJoin(facilities, eq(equipment.facilityId, facilities.id))
-      .leftJoin(equipmentTypes, eq(equipment.typeId, equipmentTypes.id))
-      .where(eq(equipment.orgId, orgId));
+      .leftJoin(equipmentTypes, eq(equipment.typeId, equipmentTypes.id));
   }
+
+  const toRow = (r: {
+    equipment: Equipment;
+    clientName: string | null;
+    facilityName: string | null;
+    typeName: string | null;
+  }): EquipmentListRow => ({
+    ...r.equipment,
+    clientName: r.clientName,
+    facilityName: r.facilityName,
+    typeName: r.typeName,
+  });
 
   return {
     async create(input: EquipmentCreate): Promise<Equipment> {
@@ -58,7 +76,8 @@ export function createEquipmentRepo(db: Db) {
         .values({
           id: newId(),
           orgId: input.orgId,
-          facilityId: input.facilityId,
+          clientId: input.clientId,
+          facilityId: input.facilityId ?? null,
           typeId: input.typeId,
           name: input.name,
           identifier: input.identifier ?? null,
@@ -80,26 +99,38 @@ export function createEquipmentRepo(db: Db) {
     },
 
     async listByOrg(orgId: string): Promise<EquipmentListRow[]> {
-      const rows = await joined(orgId).orderBy(desc(equipment.createdAt));
-      return rows.map((r) => ({
-        ...r.equipment,
-        facilityName: r.facilityName,
-        typeName: r.typeName,
-      }));
+      const rows = await selectJoined()
+        .where(eq(equipment.orgId, orgId))
+        .orderBy(desc(equipment.createdAt));
+      return rows.map(toRow);
     },
 
     async listByFacility(
       orgId: string,
       facilityId: string,
     ): Promise<EquipmentListRow[]> {
-      const rows = await joined(orgId);
-      return rows
-        .filter((r) => r.equipment.facilityId === facilityId)
-        .map((r) => ({
-          ...r.equipment,
-          facilityName: r.facilityName,
-          typeName: r.typeName,
-        }));
+      const rows = await selectJoined()
+        .where(
+          and(
+            eq(equipment.orgId, orgId),
+            eq(equipment.facilityId, facilityId),
+          ),
+        )
+        .orderBy(desc(equipment.createdAt));
+      return rows.map(toRow);
+    },
+
+    /** All of a client's equipment — facility-bound and mobile alike. */
+    async listByClient(
+      orgId: string,
+      clientId: string,
+    ): Promise<EquipmentListRow[]> {
+      const rows = await selectJoined()
+        .where(
+          and(eq(equipment.orgId, orgId), eq(equipment.clientId, clientId)),
+        )
+        .orderBy(desc(equipment.createdAt));
+      return rows.map(toRow);
     },
 
     async countByOrg(orgId: string): Promise<number> {
@@ -125,6 +156,7 @@ export function createEquipmentRepo(db: Db) {
       patch: EquipmentUpdate,
     ): Promise<Equipment | null> {
       const set: Partial<typeof equipment.$inferInsert> = { updatedAt: now() };
+      if (patch.clientId !== undefined) set.clientId = patch.clientId;
       if (patch.facilityId !== undefined) set.facilityId = patch.facilityId;
       if (patch.typeId !== undefined) set.typeId = patch.typeId;
       if (patch.name !== undefined) set.name = patch.name;

@@ -74,6 +74,21 @@ export function createFacilitiesRepo(db: Db) {
       return rows.map((r) => ({ ...r.facility, clientName: r.clientName }));
     },
 
+    async listByClient(
+      orgId: string,
+      clientId: string,
+    ): Promise<FacilityListRow[]> {
+      const rows = await db
+        .select({ facility: facilities, clientName: clients.name })
+        .from(facilities)
+        .leftJoin(clients, eq(facilities.clientId, clients.id))
+        .where(
+          and(eq(facilities.orgId, orgId), eq(facilities.clientId, clientId)),
+        )
+        .orderBy(desc(facilities.createdAt));
+      return rows.map((r) => ({ ...r.facility, clientName: r.clientName }));
+    },
+
     async countByOrg(orgId: string): Promise<number> {
       const rows = await db
         .select({ id: facilities.id })

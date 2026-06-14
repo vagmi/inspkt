@@ -222,7 +222,9 @@ export type EquipmentTypeUpdateInput = z.infer<
 
 export const equipmentCreateSchema = z
   .object({
-    facilityId: z.string().min(1, "a facility is required"),
+    clientId: z.string().min(1, "a client is required"),
+    // Optional — mobile equipment (a van, service truck) has no facility.
+    facilityId: z.string().min(1).optional(),
     typeId: z.string().min(1, "a type is required"),
     name: z.string().min(1, "name is required").max(200),
     identifier: z.string().max(120).optional(),
@@ -234,7 +236,8 @@ export const equipmentCreateSchema = z
 
 export const equipmentUpdateSchema = z
   .object({
-    facilityId: z.string().min(1).optional(),
+    clientId: z.string().min(1).optional(),
+    facilityId: z.string().min(1).nullable().optional(),
     typeId: z.string().min(1).optional(),
     name: z.string().min(1).max(200).optional(),
     identifier: z.string().max(120).nullable().optional(),

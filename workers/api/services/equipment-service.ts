@@ -1,4 +1,4 @@
-import type { FacilitiesRepo } from "../repositories/facilities-repo";
+import type { ClientsRepo } from "../repositories/clients-repo";
 import type {
   Equipment,
   EquipmentCreate,
@@ -7,29 +7,47 @@ import type {
   EquipmentUpdate,
 } from "../repositories/equipment-repo";
 import type { EquipmentTypesRepo } from "../repositories/equipment-types-repo";
-import { NotFoundError } from "./errors";
+import type { FacilitiesRepo } from "../repositories/facilities-repo";
+import { NotFoundError, ValidationError } from "./errors";
 
-// Equipment: assets at a facility, of a type. Both references are validated
-// against the org on create and on a change.
+// Equipment: assets owned by a client, optionally at one of that client's
+// facilities, of a type. The client and type are validated against the org; a
+// facility (when given) must belong to the same client.
 
 export interface EquipmentServiceDeps {
   equipmentRepo: EquipmentRepo;
+  clientsRepo: ClientsRepo;
   facilitiesRepo: FacilitiesRepo;
   equipmentTypesRepo: EquipmentTypesRepo;
 }
 
 export function createEquipmentService({
   equipmentRepo,
+  clientsRepo,
   facilitiesRepo,
   equipmentTypesRepo,
 }: EquipmentServiceDeps) {
-  async function assertFacility(orgId: string, id: string): Promise<void> {
-    if (!(await facilitiesRepo.getById(orgId, id)))
-      throw new NotFoundError(`facility ${id} not found`);
+  async function assertClient(orgId: string, id: string): Promise<void> {
+    if (!(await clientsRepo.getById(orgId, id)))
+      throw new NotFoundError(`client ${id} not found`);
   }
   async function assertType(orgId: string, id: string): Promise<void> {
     if (!(await equipmentTypesRepo.getById(orgId, id)))
       throw new NotFoundError(`equipment type ${id} not found`);
+  }
+  /** The facility must exist and belong to the owning client. */
+  async function assertFacilityForClient(
+    orgId: string,
+    facilityId: string,
+    clientId: string,
+  ): Promise<void> {
+    const facility = await facilitiesRepo.getById(orgId, facilityId);
+    if (!facility) throw new NotFoundError(`facility ${facilityId} not found`);
+    if (facility.clientId !== clientId) {
+      throw new ValidationError(
+        "the facility belongs to a different client than the equipment",
+      );
+    }
   }
 
   return {
@@ -44,6 +62,10 @@ export function createEquipmentService({
       return equipmentRepo.listByFacility(orgId, facilityId);
     },
 
+    listByClient(orgId: string, clientId: string): Promise<EquipmentListRow[]> {
+      return equipmentRepo.listByClient(orgId, clientId);
+    },
+
     async get(orgId: string, id: string): Promise<Equipment> {
       const eq = await equipmentRepo.getById(orgId, id);
       if (!eq) throw new NotFoundError(`equipment ${id} not found`);
@@ -55,9 +77,12 @@ export function createEquipmentService({
       input: Omit<EquipmentCreate, "orgId">,
     ): Promise<Equipment> {
       await Promise.all([
-        assertFacility(orgId, input.facilityId),
+        assertClient(orgId, input.clientId),
         assertType(orgId, input.typeId),
       ]);
+      if (input.facilityId) {
+        await assertFacilityForClient(orgId, input.facilityId, input.clientId);
+      }
       return equipmentRepo.create({ ...input, orgId });
     },
 
@@ -66,9 +91,23 @@ export function createEquipmentService({
       id: string,
       patch: EquipmentUpdate,
     ): Promise<Equipment> {
-      if (patch.facilityId !== undefined)
-        await assertFacility(orgId, patch.facilityId);
+      if (patch.clientId) await assertClient(orgId, patch.clientId);
       if (patch.typeId !== undefined) await assertType(orgId, patch.typeId);
+
+      if (patch.facilityId) {
+        // Validate the facility against the effective owner (new client if the
+        // patch reassigns it, otherwise the equipment's current client).
+        let clientId = patch.clientId;
+        if (!clientId) {
+          const current = await equipmentRepo.getById(orgId, id);
+          if (!current) throw new NotFoundError(`equipment ${id} not found`);
+          clientId = current.clientId ?? undefined;
+        }
+        if (clientId) {
+          await assertFacilityForClient(orgId, patch.facilityId, clientId);
+        }
+      }
+
       const updated = await equipmentRepo.update(orgId, id, patch);
       if (!updated) throw new NotFoundError(`equipment ${id} not found`);
       return updated;

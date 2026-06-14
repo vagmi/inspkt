@@ -44,6 +44,18 @@ describe("facilities controller", () => {
     expect(facilities.list).toHaveBeenCalledWith("org_test_1");
   });
 
+  it("GET /facilities?clientId= filters by client", async () => {
+    const { app, facilities } = makeApp("inspector");
+    facilities.listByClient.mockResolvedValue([]);
+    const res = await app.request("/facilities?clientId=client_9");
+    expect(res.status).toBe(200);
+    expect(facilities.listByClient).toHaveBeenCalledWith(
+      "org_test_1",
+      "client_9",
+    );
+    expect(facilities.list).not.toHaveBeenCalled();
+  });
+
   it("POST /facilities creates (manager) and returns 201", async () => {
     const { app, facilities } = makeApp("manager");
     facilities.create.mockResolvedValue(fakeFacility());

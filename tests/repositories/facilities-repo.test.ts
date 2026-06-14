@@ -47,6 +47,21 @@ describe("facilities repo", () => {
     expect(await repo.countByOrg("org_fl_b")).toBe(1);
   });
 
+  it("lists by client, scoped to that client's facilities", async () => {
+    const db = testDb();
+    const repo = createFacilitiesRepo(db);
+    await makeOrg(db, "org_byclient");
+    const acme = await makeClient(db, "org_byclient", { name: "Acme" });
+    const globex = await makeClient(db, "org_byclient", { name: "Globex" });
+    await makeFacility(db, "org_byclient", { clientId: acme.id, name: "A1" });
+    await makeFacility(db, "org_byclient", { clientId: acme.id, name: "A2" });
+    await makeFacility(db, "org_byclient", { clientId: globex.id, name: "G1" });
+
+    const list = await repo.listByClient("org_byclient", acme.id);
+    expect(list.map((f) => f.name).sort()).toEqual(["A1", "A2"]);
+    expect(list.every((f) => f.clientName === "Acme")).toBe(true);
+  });
+
   it("applies partial updates and leaves other fields intact", async () => {
     const db = testDb();
     const repo = createFacilitiesRepo(db);

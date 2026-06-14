@@ -34,6 +34,7 @@ import {
 } from "~/components/ui/select";
 import { actorFromRole, can, landingPath } from "~/lib/capabilities";
 import { apiFetch } from "~/lib/api-client.server";
+import type { Client } from "../../../workers/api/repositories/clients-repo";
 import type { EquipmentListRow } from "../../../workers/api/repositories/equipment-repo";
 import type { EquipmentTypeWithForms } from "../../../workers/api/repositories/equipment-types-repo";
 import type { FacilityListRow } from "../../../workers/api/repositories/facilities-repo";
@@ -48,13 +49,20 @@ export async function loader({ request }: Route.LoaderArgs) {
   const actor = actorFromRole(me.role);
   if (!can.setup(actor)) throw redirect(landingPath(actor));
 
-  const [equipmentRes, facilitiesRes, typesRes] = await Promise.all([
-    apiFetch<{ equipment: EquipmentListRow[] }>(request, "/api/equipment"),
-    apiFetch<{ facilities: FacilityListRow[] }>(request, "/api/facilities"),
-    apiFetch<{ types: EquipmentTypeWithForms[] }>(request, "/api/equipment-types"),
-  ]);
+  const [equipmentRes, clientsRes, facilitiesRes, typesRes] = await Promise.all(
+    [
+      apiFetch<{ equipment: EquipmentListRow[] }>(request, "/api/equipment"),
+      apiFetch<{ clients: Client[] }>(request, "/api/clients"),
+      apiFetch<{ facilities: FacilityListRow[] }>(request, "/api/facilities"),
+      apiFetch<{ types: EquipmentTypeWithForms[] }>(
+        request,
+        "/api/equipment-types",
+      ),
+    ],
+  );
   return {
     equipment: equipmentRes.equipment,
+    clients: clientsRes.clients,
     facilities: facilitiesRes.facilities,
     types: typesRes.types,
   };
@@ -82,8 +90,12 @@ export async function action({ request }: Route.ActionArgs) {
   return { ok: true };
 }
 
+// Radix Select can't hold an empty value, so "no facility" uses a sentinel.
+const NO_FACILITY = "__none__";
+
 const equipmentFormSchema = z.object({
-  facilityId: z.string().min(1, "Pick a facility"),
+  clientId: z.string().min(1, "Pick a client"),
+  facilityId: z.string(), // optional — "" means no facility (mobile asset)
   typeId: z.string().min(1, "Pick a type"),
   name: z.string().min(1, "Name is required").max(200),
   identifier: z.string().max(120).optional(),
@@ -92,6 +104,7 @@ type EquipmentFormValues = z.infer<typeof equipmentFormSchema>;
 
 function toDefaults(e?: EquipmentListRow): EquipmentFormValues {
   return {
+    clientId: e?.clientId ?? "",
     facilityId: e?.facilityId ?? "",
     typeId: e?.typeId ?? "",
     name: e?.name ?? "",
@@ -101,11 +114,13 @@ function toDefaults(e?: EquipmentListRow): EquipmentFormValues {
 
 function EquipmentDialog({
   equipment,
+  clients,
   facilities,
   types,
   trigger,
 }: {
   equipment?: EquipmentListRow;
+  clients: Client[];
   facilities: FacilityListRow[];
   types: EquipmentTypeWithForms[];
   trigger: React.ReactNode;
@@ -123,6 +138,12 @@ function EquipmentDialog({
     defaultValues: toDefaults(equipment),
   });
   const busy = fetcher.state !== "idle";
+
+  // The facility list is scoped to the chosen client.
+  const selectedClientId = form.watch("clientId");
+  const clientFacilities = facilities.filter(
+    (f) => f.clientId === selectedClientId,
+  );
 
   useEffect(() => {
     if (open) {
@@ -162,9 +183,11 @@ function EquipmentDialog({
 
   function onSubmit(values: EquipmentFormValues) {
     const payloadEquipment: Record<string, unknown> = {
-      facilityId: values.facilityId,
+      clientId: values.clientId,
       typeId: values.typeId,
       name: values.name.trim(),
+      // null clears the facility on update; create just omits it.
+      facilityId: values.facilityId || (equipment ? null : undefined),
     };
     if (values.identifier?.trim())
       payloadEquipment.identifier = values.identifier.trim();
@@ -191,27 +214,68 @@ function EquipmentDialog({
             {equipment ? "Edit equipment" : "New equipment"}
           </DialogTitle>
           <DialogDescription>
-            An asset at a facility, of a type. Its type decides which form
-            inspects it.
+            An asset owned by a client. Usually at one of that client's
+            facilities — a mobile asset (van, service truck) can have none. Its
+            type decides which form inspects it.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="clientId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Client</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={(v) => {
+                      field.onChange(v);
+                      // The current facility may belong to another client.
+                      form.setValue("facilityId", "");
+                    }}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pick a client" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {clients.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="facilityId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Facility</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <FormLabel>Facility (optional)</FormLabel>
+                    <Select
+                      value={field.value || NO_FACILITY}
+                      onValueChange={(v) =>
+                        field.onChange(v === NO_FACILITY ? "" : v)
+                      }
+                      disabled={!selectedClientId}
+                    >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Pick a facility" />
+                          <SelectValue />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {facilities.map((f) => (
+                        <SelectItem value={NO_FACILITY}>
+                          No facility (mobile)
+                        </SelectItem>
+                        {clientFacilities.map((f) => (
                           <SelectItem key={f.id} value={f.id}>
                             {f.name}
                           </SelectItem>
@@ -311,10 +375,12 @@ function EquipmentDialog({
 
 function RowActions({
   equipment,
+  clients,
   facilities,
   types,
 }: {
   equipment: EquipmentListRow;
+  clients: Client[];
   facilities: FacilityListRow[];
   types: EquipmentTypeWithForms[];
 }) {
@@ -324,6 +390,7 @@ function RowActions({
     <div className="flex items-center justify-end gap-3">
       <EquipmentDialog
         equipment={equipment}
+        clients={clients}
         facilities={facilities}
         types={types}
         trigger={
@@ -354,8 +421,9 @@ function RowActions({
 }
 
 export default function EquipmentList({ loaderData }: Route.ComponentProps) {
-  const { equipment, facilities, types } = loaderData;
-  const ready = facilities.length > 0 && types.length > 0;
+  const { equipment, clients, facilities, types } = loaderData;
+  // Equipment needs a client + type; a facility is optional (mobile assets).
+  const ready = clients.length > 0 && types.length > 0;
 
   const columns: ColumnDef<EquipmentListRow>[] = [
     {
@@ -363,6 +431,15 @@ export default function EquipmentList({ loaderData }: Route.ComponentProps) {
       header: "Name",
       cell: ({ row }) => (
         <span className="font-medium">{row.original.name}</span>
+      ),
+    },
+    {
+      accessorKey: "clientName",
+      header: "Client",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">
+          {row.original.clientName ?? "—"}
+        </span>
       ),
     },
     {
@@ -394,6 +471,7 @@ export default function EquipmentList({ loaderData }: Route.ComponentProps) {
       cell: ({ row }) => (
         <RowActions
           equipment={row.original}
+          clients={clients}
           facilities={facilities}
           types={types}
         />
@@ -408,10 +486,12 @@ export default function EquipmentList({ loaderData }: Route.ComponentProps) {
           <p className="form-label-mono text-muted-foreground">Setup</p>
           <h1 className="mt-2 text-3xl">Equipment</h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            The assets you inspect — each at a facility, of a type.
+            The assets you inspect — each owned by a client, optionally at a
+            facility, of a type.
           </p>
         </div>
         <EquipmentDialog
+          clients={clients}
           facilities={facilities}
           types={types}
           trigger={<Button disabled={!ready}>New equipment</Button>}
@@ -424,17 +504,17 @@ export default function EquipmentList({ loaderData }: Route.ComponentProps) {
         {!ready ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <span className="stamp -rotate-3">Setup needed</span>
-            <h2 className="text-2xl">Add a facility and a type first.</h2>
+            <h2 className="text-2xl">Add a client and an equipment type.</h2>
             <p className="text-muted-foreground max-w-sm text-sm">
-              Equipment lives at a{" "}
-              <Link to="/app" className="underline">
-                facility
+              Equipment is owned by a{" "}
+              <Link to="/app/clients" className="underline">
+                client
               </Link>{" "}
               and has a{" "}
               <Link to="/app/equipment-types" className="underline">
                 type
-              </Link>
-              .
+              </Link>{" "}
+              (and optionally sits at a facility).
             </p>
           </div>
         ) : equipment.length === 0 ? (

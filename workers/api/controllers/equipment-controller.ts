@@ -12,9 +12,12 @@ export function createEquipmentController() {
 
   app.get("/", async (c) => {
     const facilityId = c.req.query("facilityId");
+    const clientId = c.req.query("clientId");
     const equipment = facilityId
       ? await c.var.services.equipment.listByFacility(c.var.orgId, facilityId)
-      : await c.var.services.equipment.list(c.var.orgId);
+      : clientId
+        ? await c.var.services.equipment.listByClient(c.var.orgId, clientId)
+        : await c.var.services.equipment.list(c.var.orgId);
     return c.json({ equipment });
   });
 

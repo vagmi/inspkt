@@ -99,6 +99,9 @@ is the **first slice on the new UI foundation**: the list uses the TanStack
 **DataTable** (sort + search + paginate) and create/edit uses **react-hook-form
 + zodResolver** with the shared shadcn `Form` components. Inspector access
 redirects to their work. 149 tests green; deployed.
+**Added later:** a client detail page (`/app/clients/:id`) showing the client's
+facilities, each with its equipment grouped underneath — backed by
+`GET /api/facilities?clientId=` and `GET /api/equipment?clientId=` filters.
 
 ### [x] Phase 7 — Facilities (evolve `items`)
 **Goal:** facilities belong to a client; today's items become facilities.
@@ -135,7 +138,14 @@ several forms and a form can apply to several types, via the
 migration 0008). The types screen uses a form **multi-select** (checkboxes); an
 inspection (Phase 9) picks one of its equipment's type's forms. **Forms are
 optional on a type** — define the taxonomy first and attach rubrics later (no
-ordering dependency on Forms). Migration note:
+ordering dependency on Forms). **Equipment is owned by a client; its facility is
+optional.** Equipment has a required `client_id` (app-required, nullable column
+per migration 0010) and an optional `facility_id` (nullable per migration 0009)
+— a mobile asset (service van, truck) belongs to a client but no facility. The
+service validates that a chosen facility belongs to the same client; the form
+has a client picker that scopes the facility dropdown. `GET /api/equipment?
+clientId=` now filters by the equipment's own client (so a client page lists
+both facility-bound and mobile equipment — mobile shown in its own section). Migration note:
 the column drop is a drizzle table-rebuild whose `PRAGMA foreign_keys=OFF` is a
 no-op inside D1's migration transaction — safe here only because no equipment
 types existed yet (verified empty before deploy); the backfill must precede the

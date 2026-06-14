@@ -41,6 +41,10 @@ export function createFacilitiesService({
       return facilitiesRepo.listByOrg(orgId);
     },
 
+    listByClient(orgId: string, clientId: string): Promise<FacilityListRow[]> {
+      return facilitiesRepo.listByClient(orgId, clientId);
+    },
+
     get,
 
     /** Gated on the org's plan (max facilities) and validated against the

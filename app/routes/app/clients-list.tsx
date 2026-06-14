@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { redirect, useFetcher } from "react-router";
+import { Link, redirect, useFetcher } from "react-router";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "~/components/ui/button";
@@ -278,7 +278,14 @@ const columns: ColumnDef<Client>[] = [
   {
     accessorKey: "name",
     header: "Name",
-    cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+    cell: ({ row }) => (
+      <Link
+        to={`/app/clients/${row.original.id}`}
+        className="font-medium hover:underline"
+      >
+        {row.original.name}
+      </Link>
+    ),
   },
   {
     id: "contact",
