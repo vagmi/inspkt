@@ -101,6 +101,8 @@ export const formCreateSchema = z.object({
   name: z.string().min(1, "name is required").max(200),
   description: z.string().max(2000).optional(),
   checkpoints: z.array(checkpointSchema).max(200).default([]),
+  /** Equipment types this form applies to (many-to-many). */
+  typeIds: z.array(z.string()).max(200).optional(),
 });
 
 export const formUpdateSchema = z
@@ -108,6 +110,7 @@ export const formUpdateSchema = z
     name: z.string().min(1).max(200).optional(),
     description: z.string().max(2000).nullable().optional(),
     checkpoints: z.array(checkpointSchema).max(200).optional(),
+    typeIds: z.array(z.string()).max(200).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, "no fields to update");
 
@@ -124,7 +127,7 @@ const capturedLatLngPair = (v: {
 
 export const inspectionCreateSchema = z
   .object({
-    facilityId: z.string().min(1),
+    equipmentId: z.string().min(1),
     formId: z.string().min(1),
     capturedLat: z.number().min(-90).max(90).optional(),
     capturedLng: z.number().min(-180).max(180).optional(),

@@ -16,6 +16,12 @@ export interface AttachedForm {
   name: string;
 }
 
+/** A type a form applies to (the reverse view of the same join). */
+export interface AttachedType {
+  id: string;
+  name: string;
+}
+
 export interface EquipmentTypeWithForms extends EquipmentType {
   forms: AttachedForm[];
 }
@@ -73,7 +79,73 @@ export function createEquipmentTypesRepo(db: Db) {
     }
   }
 
+  /** The reverse view of the join: the types a given form applies to. */
+  async function typesForForm(
+    orgId: string,
+    formId: string,
+  ): Promise<AttachedType[]> {
+    return db
+      .select({ id: equipmentTypes.id, name: equipmentTypes.name })
+      .from(equipmentTypeForms)
+      .innerJoin(
+        equipmentTypes,
+        eq(equipmentTypeForms.typeId, equipmentTypes.id),
+      )
+      .where(
+        and(
+          eq(equipmentTypeForms.orgId, orgId),
+          eq(equipmentTypeForms.formId, formId),
+        ),
+      );
+  }
+
+  /** Replace the set of types a form applies to with exactly `typeIds`. */
+  async function setTypesForForm(
+    orgId: string,
+    formId: string,
+    typeIds: string[],
+  ): Promise<void> {
+    await db
+      .delete(equipmentTypeForms)
+      .where(
+        and(
+          eq(equipmentTypeForms.orgId, orgId),
+          eq(equipmentTypeForms.formId, formId),
+        ),
+      );
+    if (typeIds.length > 0) {
+      await db
+        .insert(equipmentTypeForms)
+        .values(typeIds.map((typeId) => ({ orgId, typeId, formId })));
+    }
+  }
+
   return {
+    typesForForm,
+    setTypesForForm,
+
+    /** Every form→type link in the org, for grouping types under each form. */
+    async typeLinksByForm(
+      orgId: string,
+    ): Promise<Array<{ formId: string; type: AttachedType }>> {
+      const rows = await db
+        .select({
+          formId: equipmentTypeForms.formId,
+          typeId: equipmentTypes.id,
+          typeName: equipmentTypes.name,
+        })
+        .from(equipmentTypeForms)
+        .innerJoin(
+          equipmentTypes,
+          eq(equipmentTypeForms.typeId, equipmentTypes.id),
+        )
+        .where(eq(equipmentTypeForms.orgId, orgId));
+      return rows.map((r) => ({
+        formId: r.formId,
+        type: { id: r.typeId, name: r.typeName },
+      }));
+    },
+
     async create(
       input: EquipmentTypeCreate,
     ): Promise<EquipmentTypeWithForms> {

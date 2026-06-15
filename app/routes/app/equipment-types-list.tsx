@@ -142,54 +142,58 @@ function DeleteButton({ id, name }: { id: string; name: string }) {
   );
 }
 
+// Module-scope so the array is a stable reference. Defining columns inside the
+// component makes a new array every render; TanStack Table then churns, and the
+// useFetcher() in the DeleteButton cell turns that into an infinite render loop.
+// (The cells only read `row.original`, so they need nothing from the closure.)
+const columns: ColumnDef<EquipmentTypeWithForms>[] = [
+  {
+    accessorKey: "name",
+    header: "Type",
+    cell: ({ row }) => (
+      <Link
+        to={`/app/equipment-types/${row.original.id}`}
+        className="font-medium hover:underline"
+      >
+        {row.original.name}
+      </Link>
+    ),
+  },
+  {
+    id: "fields",
+    header: "Fields",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">
+        {row.original.fields.length}
+      </span>
+    ),
+  },
+  {
+    id: "forms",
+    header: "Forms",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">
+        {row.original.forms.length > 0
+          ? row.original.forms.map((f) => f.name).join(", ")
+          : "—"}
+      </span>
+    ),
+  },
+  {
+    id: "actions",
+    header: () => <span className="sr-only">Actions</span>,
+    cell: ({ row }) => (
+      <div className="text-right">
+        <DeleteButton id={row.original.id} name={row.original.name} />
+      </div>
+    ),
+  },
+];
+
 export default function EquipmentTypesList({
   loaderData,
 }: Route.ComponentProps) {
   const { types } = loaderData;
-
-  const columns: ColumnDef<EquipmentTypeWithForms>[] = [
-    {
-      accessorKey: "name",
-      header: "Type",
-      cell: ({ row }) => (
-        <Link
-          to={`/app/equipment-types/${row.original.id}`}
-          className="font-medium hover:underline"
-        >
-          {row.original.name}
-        </Link>
-      ),
-    },
-    {
-      id: "fields",
-      header: "Fields",
-      cell: ({ row }) => (
-        <span className="text-muted-foreground">
-          {row.original.fields.length}
-        </span>
-      ),
-    },
-    {
-      id: "forms",
-      header: "Forms",
-      cell: ({ row }) => (
-        <span className="text-muted-foreground">
-          {row.original.forms.length > 0
-            ? row.original.forms.map((f) => f.name).join(", ")
-            : "—"}
-        </span>
-      ),
-    },
-    {
-      id: "actions",
-      header: () => <span className="sr-only">Actions</span>,
-      cell: ({ row }) => (
-        <div className="text-right">
-          <DeleteButton id={row.original.id} name={row.original.name} />
-        </div>
-      ),
-    },
-  ];
 
   return (
     <div>

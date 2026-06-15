@@ -166,6 +166,23 @@ describe("forms controller", () => {
     expect(patch.checkpoints[0]).toMatchObject({ id: "cp_1", prompt: "Kept" });
   });
 
+  it("PATCH /forms/:id passes equipment type association through", async () => {
+    const { app, forms } = makeApp();
+    forms.update.mockResolvedValue({
+      ...fakeForm(),
+      checkpoints: [],
+      types: [{ id: "type_1", name: "Rooftop HVAC" }],
+    });
+
+    const res = await app.request(
+      "/forms/form_1",
+      json({ typeIds: ["type_1", "type_2"] }, "PATCH"),
+    );
+    expect(res.status).toBe(200);
+    const [, , patch] = forms.update.mock.calls[0];
+    expect(patch.typeIds).toEqual(["type_1", "type_2"]);
+  });
+
   it("GET /forms/:id maps NotFoundError to 404", async () => {
     const { app, forms } = makeApp();
     forms.get.mockRejectedValue(new NotFoundError("nope"));

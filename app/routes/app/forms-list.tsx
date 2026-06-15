@@ -15,13 +15,14 @@ import { Textarea } from "~/components/ui/textarea";
 import { apiFetch } from "~/lib/api-client.server";
 import { cn } from "~/lib/utils";
 import type { Form } from "../../../workers/api/repositories/forms-repo";
+import type { FormListRow } from "../../../workers/api/services/forms-service";
 import type { Route } from "./+types/forms-list";
 
 export function meta() {
   return [{ title: "Forms — inspkt" }];
 }
 
-type FormListEntry = Form & { checkpointCount: number };
+type FormListEntry = FormListRow;
 
 export async function loader({ request }: Route.LoaderArgs) {
   const res = await apiFetch<{ forms: FormListEntry[] }>(request, "/api/forms");
@@ -95,6 +96,11 @@ function FormCard({ form }: { form: FormListEntry }) {
           {form.description}
         </p>
       )}
+      <p className="text-muted-foreground/80 mt-2 line-clamp-1 text-xs">
+        {form.types.length > 0
+          ? form.types.map((t) => t.name).join(", ")
+          : "Not applied to any equipment type"}
+      </p>
       <div className="rule-perforated mt-4" />
       <p className="form-label-mono text-muted-foreground/70 mt-3 text-[10px]">
         {dateFormat.format(new Date(form.updatedAt * 1000))}

@@ -194,6 +194,21 @@ auto-selects the type's form. Location mismatch now compares against the
 equipment's (or facility's) registered location.
 **Done when:** start an inspection by choosing equipment; capture + submit work
 as before; tests green; deploys.
+**Built (2026-06-15, not yet deployed):** schema adds `equipment_id` (nullable
+DB / app-required) and relaxes `item_id`/`facilityId` to nullable (mobile
+equipment has no facility) — migration `0013` (a table rebuild; hand-edited so
+the new column omits from the copy and defaults NULL, safe because
+`inspections`/`observations` are empty). Repo joins resolve equipment → type →
+facility → client → form names. Service `create` validates the chosen form is
+one of the equipment's type's forms, snapshots the facility from the equipment,
+and the location check prefers the equipment's own coords, falling back to the
+facility's. `InspectionDetail` exposes `equipment` + nullable `facility`/`client`.
+UI: the new-inspection dialog picks **equipment** (only those whose type has ≥1
+form) then a type-scoped **form** (auto-selected when the type has exactly one);
+list rows + capture header show equipment with client/facility context. 198
+tests + typecheck + build green locally. **Remaining to ship:** verify remote
+`inspections` empty → `pnpm db:migrate:remote` → `pnpm build && wrangler deploy`
+→ smoke-test, then check this box.
 
 ### [ ] Phase 10 — Assignments & inspector queue
 **Goal:** managers assign work; inspectors execute it.

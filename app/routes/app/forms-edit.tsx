@@ -14,10 +14,9 @@ import {
 } from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
 import { ApiError, apiFetch } from "~/lib/api-client.server";
-import type {
-  Checkpoint,
-  FormWithCheckpoints,
-} from "../../../workers/api/repositories/forms-repo";
+import type { EquipmentTypeWithForms } from "../../../workers/api/repositories/equipment-types-repo";
+import type { Checkpoint } from "../../../workers/api/repositories/forms-repo";
+import type { FormWithTypes } from "../../../workers/api/services/forms-service";
 import type { Route } from "./+types/forms-edit";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -25,11 +24,14 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-  const res = await apiFetch<{ form: FormWithCheckpoints }>(
-    request,
-    `/api/forms/${params.formId}`,
-  );
-  return { form: res.form };
+  const [formRes, typesRes] = await Promise.all([
+    apiFetch<{ form: FormWithTypes }>(request, `/api/forms/${params.formId}`),
+    apiFetch<{ types: EquipmentTypeWithForms[] }>(
+      request,
+      "/api/equipment-types",
+    ),
+  ]);
+  return { form: formRes.form, equipmentTypes: typesRes.types };
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
@@ -38,6 +40,7 @@ export async function action({ request, params }: Route.ActionArgs) {
     name?: string;
     description?: string;
     checkpoints?: unknown[];
+    typeIds?: string[];
   };
 
   if (body.intent === "delete") {
@@ -48,7 +51,7 @@ export async function action({ request, params }: Route.ActionArgs) {
   }
 
   try {
-    const res = await apiFetch<{ form: FormWithCheckpoints }>(
+    const res = await apiFetch<{ form: FormWithTypes }>(
       request,
       `/api/forms/${params.formId}`,
       {
@@ -58,6 +61,7 @@ export async function action({ request, params }: Route.ActionArgs) {
           name: body.name,
           description: body.description ?? null,
           checkpoints: body.checkpoints,
+          typeIds: body.typeIds,
         }),
       },
     );
@@ -415,11 +419,15 @@ export default function FormsEdit({ loaderData }: Route.ComponentProps) {
     loaderData.form.description ?? "",
   );
   const [drafts, setDrafts] = useState<Draft[]>(initialDrafts);
+  const [typeIds, setTypeIds] = useState<string[]>(
+    loaderData.form.types.map((t) => t.id),
+  );
 
   // Sync local state after a successful save (new checkpoints gain ids).
   useEffect(() => {
     if (fetcher.state === "idle" && fetcher.data?.ok) {
       setDrafts(fetcher.data.form.checkpoints.map(draftFromCheckpoint));
+      setTypeIds(fetcher.data.form.types.map((t) => t.id));
       toast.success("Form saved");
     } else if (fetcher.state === "idle" && fetcher.data?.ok === false) {
       toast.error(fetcher.data.error);
@@ -463,6 +471,7 @@ export default function FormsEdit({ loaderData }: Route.ComponentProps) {
         name: name.trim(),
         description: description.trim(),
         checkpoints: payload,
+        typeIds,
       }),
     );
     fetcher.submit(body, { method: "post", encType: "application/json" });
@@ -512,6 +521,45 @@ export default function FormsEdit({ loaderData }: Route.ComponentProps) {
           </Button>
         </div>
       </div>
+
+      <div className="rule-perforated mt-6" />
+
+      {/* Equipment types this form applies to (the reverse of the type editor's
+          forms multi-select — the same many-to-many link, edited from here). */}
+      <section className="mt-6">
+        <h2 className="text-lg">Applies to equipment types</h2>
+        <p className="text-muted-foreground text-sm">
+          The asset types this rubric can inspect (optional — also editable from
+          each type).
+        </p>
+        {loaderData.equipmentTypes.length === 0 ? (
+          <p className="text-muted-foreground mt-3 rounded-md border border-dashed p-3 text-sm">
+            No equipment types yet — create some on the{" "}
+            <Link to="/app/equipment-types" className="underline">
+              Equipment types
+            </Link>{" "}
+            page.
+          </p>
+        ) : (
+          <div className="mt-3 max-h-44 space-y-2 overflow-y-auto rounded-md border p-3">
+            {loaderData.equipmentTypes.map((t) => (
+              <label key={t.id} className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={typeIds.includes(t.id)}
+                  onCheckedChange={(v) =>
+                    setTypeIds((ids) =>
+                      v === true
+                        ? [...ids, t.id]
+                        : ids.filter((x) => x !== t.id),
+                    )
+                  }
+                />
+                {t.name}
+              </label>
+            ))}
+          </div>
+        )}
+      </section>
 
       <div className="rule-perforated mt-6" />
 

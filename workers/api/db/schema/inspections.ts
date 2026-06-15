@@ -6,20 +6,25 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import { equipment } from "./equipment";
 import { facilities } from "./facilities";
 import { checkpoints, forms } from "./forms";
 import { now } from "./helpers";
 import { organizations } from "./organizations";
 import { users } from "./users";
 
-/** An inspection: one inspector working a form against a facility. Starts as a
- * draft (resumable) and finalizes on submit. Verdict/score/re-inspection
- * fields are added in Phase 11 — submit here only flips the status. Captured
- * lat/lng record where the inspection was actually performed, so it can be
- * compared against the facility's registered location.
+/** An inspection: one inspector working a form against a piece of equipment.
+ * Starts as a draft (resumable) and finalizes on submit. Verdict/score/
+ * re-inspection fields are added in Phase 11 — submit here only flips the
+ * status. Captured lat/lng record where the inspection was actually performed,
+ * so it can be compared against the equipment's (or its facility's) registered
+ * location.
  *
- * (Phase 9 will retarget this to Equipment; the FK column is still physically
- * `item_id` — mapped to `facilityId` — pointing at the facilities table.) */
+ * Phase 9 retargeted this from a bare facility to Equipment. `equipmentId` is
+ * the target (nullable in the DB only — the app always sets it). `facilityId`
+ * is a denormalized snapshot of the equipment's facility at capture time (null
+ * for mobile equipment); it stays physically named `item_id` from the original
+ * `items` model. */
 export const inspections = sqliteTable(
   "inspections",
   {
@@ -27,9 +32,8 @@ export const inspections = sqliteTable(
     orgId: text("org_id")
       .notNull()
       .references(() => organizations.id),
-    facilityId: text("item_id")
-      .notNull()
-      .references(() => facilities.id),
+    equipmentId: text("equipment_id").references(() => equipment.id),
+    facilityId: text("item_id").references(() => facilities.id),
     formId: text("form_id")
       .notNull()
       .references(() => forms.id),
@@ -47,6 +51,7 @@ export const inspections = sqliteTable(
   },
   (t) => [
     index("inspections_org_id_idx").on(t.orgId),
+    index("inspections_equipment_id_idx").on(t.equipmentId),
     index("inspections_item_id_idx").on(t.facilityId),
   ],
 );

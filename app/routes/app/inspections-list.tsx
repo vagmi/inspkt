@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, redirect, useFetcher } from "react-router";
 import { toast } from "sonner";
 import { Badge } from "~/components/ui/badge";
@@ -21,8 +21,11 @@ import {
 } from "~/components/ui/select";
 import { apiFetch } from "~/lib/api-client.server";
 import { cn } from "~/lib/utils";
-import type { Form } from "../../../workers/api/repositories/forms-repo";
-import type { FacilityListRow } from "../../../workers/api/repositories/facilities-repo";
+import type { EquipmentListRow } from "../../../workers/api/repositories/equipment-repo";
+import type {
+  AttachedForm,
+  EquipmentTypeWithForms,
+} from "../../../workers/api/repositories/equipment-types-repo";
 import type { InspectionListRow } from "../../../workers/api/repositories/inspections-repo";
 import type { Route } from "./+types/inspections-list";
 
@@ -31,15 +34,18 @@ export function meta() {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const [inspectionsRes, formsRes, facilitiesRes] = await Promise.all([
+  const [inspectionsRes, equipmentRes, typesRes] = await Promise.all([
     apiFetch<{ inspections: InspectionListRow[] }>(request, "/api/inspections"),
-    apiFetch<{ forms: Form[] }>(request, "/api/forms"),
-    apiFetch<{ facilities: FacilityListRow[] }>(request, "/api/facilities"),
+    apiFetch<{ equipment: EquipmentListRow[] }>(request, "/api/equipment"),
+    apiFetch<{ types: EquipmentTypeWithForms[] }>(
+      request,
+      "/api/equipment-types",
+    ),
   ]);
   return {
     inspections: inspectionsRes.inspections,
-    forms: formsRes.forms,
-    facilities: facilitiesRes.facilities,
+    equipment: equipmentRes.equipment,
+    types: typesRes.types,
   };
 }
 
@@ -54,11 +60,11 @@ export async function action({ request }: Route.ActionArgs) {
     return { ok: true };
   }
 
-  // create a draft, then jump into the capture walker
-  const facilityId = String(form.get("facilityId") ?? "");
+  // create a draft against a piece of equipment, then jump into the walker
+  const equipmentId = String(form.get("equipmentId") ?? "");
   const formId = String(form.get("formId") ?? "");
-  if (!facilityId || !formId) {
-    return { ok: false, error: "Pick both a form and a facility." };
+  if (!equipmentId || !formId) {
+    return { ok: false, error: "Pick both equipment and a form." };
   }
   const lat = Number.parseFloat(String(form.get("capturedLat") ?? ""));
   const lng = Number.parseFloat(String(form.get("capturedLng") ?? ""));
@@ -71,7 +77,7 @@ export async function action({ request }: Route.ActionArgs) {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        facilityId,
+        equipmentId,
         formId,
         capturedLat: hasCoords ? lat : undefined,
         capturedLng: hasCoords ? lng : undefined,
@@ -95,6 +101,12 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+/** "Client / Facility" or "Mobile" for an inspection row's location context. */
+function locationContext(row: InspectionListRow): string {
+  const parts = [row.clientName, row.facilityName].filter(Boolean);
+  return parts.length > 0 ? parts.join(" / ") : "Mobile";
+}
+
 function InspectionRow({ row }: { row: InspectionListRow }) {
   const fetcher = useFetcher();
   const deleting = fetcher.state !== "idle";
@@ -111,12 +123,12 @@ function InspectionRow({ row }: { row: InspectionListRow }) {
             to={`/app/inspections/${row.id}`}
             className="truncate text-lg hover:underline"
           >
-            {row.facilityName ?? "—"}
+            {row.equipmentName ?? "—"}
           </Link>
           <StatusBadge status={row.status} />
         </div>
         <p className="form-label-mono text-muted-foreground/70 mt-1 text-[10px]">
-          {row.formName ?? "—"} ·{" "}
+          {locationContext(row)} · {row.formName ?? "—"} ·{" "}
           {dateFormat.format(new Date(row.createdAt * 1000))}
         </p>
       </div>
@@ -135,23 +147,57 @@ function InspectionRow({ row }: { row: InspectionListRow }) {
   );
 }
 
+/** Equipment dropdown label — name plus its client / facility (or "mobile"). */
+function equipmentLabel(e: EquipmentListRow): string {
+  const where = e.facilityName
+    ? `${e.clientName ?? "—"} / ${e.facilityName}`
+    : `${e.clientName ?? "—"} · mobile`;
+  return `${e.name} — ${where}`;
+}
+
 function NewInspectionDialog({
-  forms,
-  facilities,
+  equipment,
+  types,
 }: {
-  forms: Form[];
-  facilities: FacilityListRow[];
+  equipment: EquipmentListRow[];
+  types: EquipmentTypeWithForms[];
 }) {
   const fetcher = useFetcher<typeof action>();
   const [open, setOpen] = useState(false);
+  const [equipmentId, setEquipmentId] = useState("");
   const [formId, setFormId] = useState("");
-  const [facilityId, setFacilityId] = useState("");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
     null,
   );
   const [locating, setLocating] = useState(false);
   const busy = fetcher.state !== "idle";
-  const ready = forms.length > 0 && facilities.length > 0;
+
+  // The forms each type offers, and the equipment we can actually inspect — a
+  // type may have zero forms, and equipment of such a type can't be inspected.
+  const formsByType = useMemo(() => {
+    const map = new Map<string, AttachedForm[]>();
+    for (const t of types) map.set(t.id, t.forms);
+    return map;
+  }, [types]);
+
+  const eligible = useMemo(
+    () => equipment.filter((e) => (formsByType.get(e.typeId)?.length ?? 0) > 0),
+    [equipment, formsByType],
+  );
+
+  const selected = eligible.find((e) => e.id === equipmentId);
+  const availableForms = selected
+    ? (formsByType.get(selected.typeId) ?? [])
+    : [];
+  const ready = eligible.length > 0;
+
+  // When the equipment changes, auto-select the form if its type has exactly
+  // one, otherwise clear the choice.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on equipment change
+  useEffect(() => {
+    const forms = selected ? (formsByType.get(selected.typeId) ?? []) : [];
+    setFormId(forms.length === 1 ? forms[0].id : "");
+  }, [equipmentId, formsByType]);
 
   // Try to grab location as soon as the dialog opens — it's best-effort.
   useEffect(() => {
@@ -180,25 +226,27 @@ function NewInspectionDialog({
         <DialogHeader>
           <DialogTitle>Start an inspection</DialogTitle>
           <DialogDescription>
-            Choose the form to inspect against and the facility being inspected.
+            Choose the equipment being inspected and the form to inspect it
+            against.
           </DialogDescription>
         </DialogHeader>
         {!ready ? (
           <p className="text-muted-foreground text-sm">
-            You need at least one{" "}
-            <Link to="/app/forms" className="underline">
-              form
-            </Link>{" "}
-            and one{" "}
+            You need at least one piece of{" "}
             <Link to="/app" className="underline">
-              client facility
+              equipment
             </Link>{" "}
-            first.
+            whose{" "}
+            <Link to="/app/equipment-types" className="underline">
+              type
+            </Link>{" "}
+            has an inspection form attached. Add a form to the equipment's type
+            to inspect it.
           </p>
         ) : (
           <fetcher.Form method="post" className="space-y-4">
+            <input type="hidden" name="equipmentId" value={equipmentId} />
             <input type="hidden" name="formId" value={formId} />
-            <input type="hidden" name="facilityId" value={facilityId} />
             {coords && (
               <>
                 <input type="hidden" name="capturedLat" value={coords.lat} />
@@ -206,31 +254,38 @@ function NewInspectionDialog({
               </>
             )}
             <div>
-              <Label>Form</Label>
-              <Select value={formId} onValueChange={setFormId}>
+              <Label>Equipment</Label>
+              <Select value={equipmentId} onValueChange={setEquipmentId}>
                 <SelectTrigger className="mt-1.5">
-                  <SelectValue placeholder="Pick a form" />
+                  <SelectValue placeholder="Pick equipment" />
                 </SelectTrigger>
                 <SelectContent>
-                  {forms.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>
-                      {f.name}
+                  {eligible.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {equipmentLabel(e)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Facility</Label>
-              <Select value={facilityId} onValueChange={setFacilityId}>
+              <Label>Form</Label>
+              <Select
+                value={formId}
+                onValueChange={setFormId}
+                disabled={!selected}
+              >
                 <SelectTrigger className="mt-1.5">
-                  <SelectValue placeholder="Pick a facility" />
+                  <SelectValue
+                    placeholder={
+                      selected ? "Pick a form" : "Pick equipment first"
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  {facilities.map((f) => (
+                  {availableForms.map((f) => (
                     <SelectItem key={f.id} value={f.id}>
                       {f.name}
-                      {f.clientName ? ` · ${f.clientName}` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -244,7 +299,7 @@ function NewInspectionDialog({
                   : "Location unavailable — capture will proceed without it."}
             </p>
             <DialogFooter>
-              <Button type="submit" disabled={busy || !formId || !facilityId}>
+              <Button type="submit" disabled={busy || !equipmentId || !formId}>
                 {busy ? "Starting…" : "Start inspection"}
               </Button>
             </DialogFooter>
@@ -256,7 +311,7 @@ function NewInspectionDialog({
 }
 
 export default function InspectionsList({ loaderData }: Route.ComponentProps) {
-  const { inspections, forms, facilities } = loaderData;
+  const { inspections, equipment, types } = loaderData;
   return (
     <div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -264,10 +319,10 @@ export default function InspectionsList({ loaderData }: Route.ComponentProps) {
           <p className="form-label-mono text-muted-foreground">Field capture</p>
           <h1 className="mt-2 text-3xl">Inspections</h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Pick a form and an item, walk the checkpoints, get a verdict.
+            Pick equipment and a form, walk the checkpoints, get a verdict.
           </p>
         </div>
-        <NewInspectionDialog forms={forms} facilities={facilities} />
+        <NewInspectionDialog equipment={equipment} types={types} />
       </div>
 
       <div className="rule-perforated mt-6" />
@@ -278,7 +333,7 @@ export default function InspectionsList({ loaderData }: Route.ComponentProps) {
           <h2 className="text-2xl">Run your first inspection.</h2>
           <p className="text-muted-foreground max-w-sm text-sm">
             Each inspection records answers, photos, and location against one
-            item — and finalizes into a verdict when you submit.
+            piece of equipment — and finalizes into a verdict when you submit.
           </p>
         </div>
       ) : (

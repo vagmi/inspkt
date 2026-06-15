@@ -1,7 +1,15 @@
 import { and, desc, eq } from "drizzle-orm";
 import { newId } from "~/lib/id";
 import type { Db } from "../db/client";
-import { facilities, forms, inspections, observations } from "../db/schema";
+import {
+  clients,
+  equipment,
+  equipmentTypes,
+  facilities,
+  forms,
+  inspections,
+  observations,
+} from "../db/schema";
 import type { ObservationAnswer } from "../db/schema/inspections";
 import { now } from "../db/schema/helpers";
 
@@ -12,15 +20,22 @@ export interface InspectionWithObservations extends Inspection {
   observations: Observation[];
 }
 
-/** A row for the list view: the inspection plus the names it points at. */
+/** A row for the list view: the inspection plus the names it points at. The
+ * equipment is the target; the facility/client are resolved through it (and the
+ * facility is also the snapshot stored on the inspection). */
 export interface InspectionListRow extends Inspection {
+  equipmentName: string | null;
+  typeName: string | null;
   facilityName: string | null;
+  clientName: string | null;
   formName: string | null;
 }
 
 export interface InspectionCreate {
   orgId: string;
-  facilityId: string;
+  equipmentId: string;
+  /** Snapshot of the equipment's facility at capture time — null for mobile. */
+  facilityId?: string | null;
   formId: string;
   inspectorUserId: string;
   capturedLat?: number | null;
@@ -102,7 +117,8 @@ export function createInspectionsRepo(db: Db) {
         .values({
           id: newId(),
           orgId: input.orgId,
-          facilityId: input.facilityId,
+          equipmentId: input.equipmentId,
+          facilityId: input.facilityId ?? null,
           formId: input.formId,
           inspectorUserId: input.inspectorUserId,
           status: "draft",
@@ -130,17 +146,26 @@ export function createInspectionsRepo(db: Db) {
       const rows = await db
         .select({
           inspection: inspections,
+          equipmentName: equipment.name,
+          typeName: equipmentTypes.name,
           facilityName: facilities.name,
+          clientName: clients.name,
           formName: forms.name,
         })
         .from(inspections)
+        .leftJoin(equipment, eq(inspections.equipmentId, equipment.id))
+        .leftJoin(equipmentTypes, eq(equipment.typeId, equipmentTypes.id))
+        .leftJoin(clients, eq(equipment.clientId, clients.id))
         .leftJoin(facilities, eq(inspections.facilityId, facilities.id))
         .leftJoin(forms, eq(inspections.formId, forms.id))
         .where(eq(inspections.orgId, orgId))
         .orderBy(desc(inspections.createdAt));
       return rows.map((r) => ({
         ...r.inspection,
+        equipmentName: r.equipmentName,
+        typeName: r.typeName,
         facilityName: r.facilityName,
+        clientName: r.clientName,
         formName: r.formName,
       }));
     },

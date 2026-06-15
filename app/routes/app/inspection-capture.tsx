@@ -440,7 +440,16 @@ export default function InspectionCapture({ loaderData }: Route.ComponentProps) 
             </Link>{" "}
             / capture
           </p>
-          <h1 className="mt-2 truncate text-2xl">{inspection.facility.name}</h1>
+          <h1 className="mt-2 truncate text-2xl">
+            {inspection.equipment.name}
+          </h1>
+          {(inspection.client || inspection.facility) && (
+            <p className="form-label-mono text-muted-foreground/70 mt-1 text-[10px]">
+              {[inspection.client?.name, inspection.facility?.name]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          )}
           <p className="text-muted-foreground mt-1 text-sm">
             {inspection.form.name} · {answeredCount}/{checkpoints.length}{" "}
             answered{" "}
@@ -468,7 +477,7 @@ export default function InspectionCapture({ loaderData }: Route.ComponentProps) 
         <div className="border-destructive/40 bg-destructive/10 text-destructive mt-4 rounded-lg border p-3 text-sm">
           ⚠ Captured location is{" "}
           {Math.round(inspection.locationDistanceMeters ?? 0)} m from where this
-          item is registered.
+          equipment is registered.
         </div>
       )}
 

@@ -51,13 +51,13 @@ describe("inspections controller", () => {
 
     const res = await app.request(
       "/inspections",
-      json({ facilityId: "facility_1", formId: "form_1" }),
+      json({ equipmentId: "equip_1", formId: "form_1" }),
     );
     expect(res.status).toBe(201);
     expect(inspections.create).toHaveBeenCalledWith(
       "org_test_1",
       "user_test_1",
-      { facilityId: "facility_1", formId: "form_1" },
+      { equipmentId: "equip_1", formId: "form_1" },
     );
   });
 
@@ -65,21 +65,21 @@ describe("inspections controller", () => {
     const { app, inspections } = makeApp();
     const res = await app.request(
       "/inspections",
-      json({ facilityId: "f", formId: "fm", capturedLat: 12.97 }),
+      json({ equipmentId: "e", formId: "fm", capturedLat: 12.97 }),
     );
     expect(res.status).toBe(400);
     expect(inspections.create).not.toHaveBeenCalled();
   });
 
-  it("POST /inspections maps NotFoundError (bad facility/form) to 404", async () => {
+  it("POST /inspections maps NotFoundError (bad equipment/form) to 404", async () => {
     const { app, inspections } = makeApp();
     inspections.create.mockRejectedValue(
-      new NotFoundError("facility x not found"),
+      new NotFoundError("equipment x not found"),
     );
 
     const res = await app.request(
       "/inspections",
-      json({ facilityId: "x", formId: "f" }),
+      json({ equipmentId: "x", formId: "f" }),
     );
     expect(res.status).toBe(404);
   });

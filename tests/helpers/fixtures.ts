@@ -117,15 +117,16 @@ export async function makeForm(
   });
 }
 
-/** Create a draft inspection wired to a fresh facility, form, and inspector.
- * Returns the inspection plus the ids it references, so tests can drive the
- * observation/submit flow. */
+/** Create a draft inspection wired to a fresh equipment, form, and inspector.
+ * The inspection's facility is snapshotted from the equipment (null if the
+ * equipment is mobile). Returns the inspection plus the ids it references, so
+ * tests can drive the observation/submit flow. */
 export async function makeInspection(
   db: Db,
   orgId: string,
   opts: {
     inspectorUserId?: string;
-    facilityId?: string;
+    equipmentId?: string;
     formId?: string;
     checkpoints?: CheckpointInput[];
     capturedLat?: number | null;
@@ -133,27 +134,37 @@ export async function makeInspection(
   } = {},
 ): Promise<{
   inspection: InspectionWithObservations;
-  facilityId: string;
+  equipmentId: string;
+  facilityId: string | null;
   formId: string;
   form: FormWithCheckpoints;
   inspectorUserId: string;
 }> {
   const inspectorUserId = opts.inspectorUserId ?? "user_test_1";
   await makeUser(db, inspectorUserId);
-  const facilityId = opts.facilityId ?? (await makeFacility(db, orgId)).id;
   const form =
     opts.formId !== undefined
       ? (await createFormsRepo(db).getById(orgId, opts.formId))!
       : await makeForm(db, orgId, { checkpoints: opts.checkpoints });
+  const equipmentId = opts.equipmentId ?? (await makeEquipment(db, orgId)).id;
+  const equipment = (await createEquipmentRepo(db).getById(orgId, equipmentId))!;
   const inspection = await createInspectionsRepo(db).create({
     orgId,
-    facilityId,
+    equipmentId,
+    facilityId: equipment.facilityId,
     formId: form.id,
     inspectorUserId,
     capturedLat: opts.capturedLat,
     capturedLng: opts.capturedLng,
   });
-  return { inspection, facilityId, formId: form.id, form, inspectorUserId };
+  return {
+    inspection,
+    equipmentId,
+    facilityId: equipment.facilityId,
+    formId: form.id,
+    form,
+    inspectorUserId,
+  };
 }
 
 export async function makeClient(

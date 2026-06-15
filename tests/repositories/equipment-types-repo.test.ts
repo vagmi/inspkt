@@ -118,4 +118,45 @@ describe("equipment types repo", () => {
     expect(await repo.delete("org_a", type.id)).toBe(true);
     expect(await repo.getById("org_a", type.id)).toBeNull();
   });
+
+  it("edits the join from the form side (typesForForm / setTypesForForm)", async () => {
+    const db = testDb();
+    const repo = createEquipmentTypesRepo(db);
+    await makeOrg(db, "org_rev");
+    const form = await makeForm(db, "org_rev", { name: "Quarterly" });
+    // Two types, neither attached to the form yet.
+    const hvac = await makeEquipmentType(db, "org_rev", {
+      name: "HVAC",
+      formIds: [],
+    });
+    const van = await makeEquipmentType(db, "org_rev", {
+      name: "Van",
+      formIds: [],
+    });
+
+    expect(await repo.typesForForm("org_rev", form.id)).toHaveLength(0);
+
+    // Apply the form to both types from the form side.
+    await repo.setTypesForForm("org_rev", form.id, [hvac.id, van.id]);
+    const attached = await repo.typesForForm("org_rev", form.id);
+    expect(attached.map((t) => t.name).sort()).toEqual(["HVAC", "Van"]);
+    // The link is visible from the type side too.
+    expect(
+      (await repo.getById("org_rev", hvac.id))?.forms.map((f) => f.name),
+    ).toEqual(["Quarterly"]);
+
+    // Replace the set with just one type.
+    await repo.setTypesForForm("org_rev", form.id, [van.id]);
+    const after = await repo.typesForForm("org_rev", form.id);
+    expect(after.map((t) => t.name)).toEqual(["Van"]);
+    expect(
+      (await repo.getById("org_rev", hvac.id))?.forms,
+    ).toHaveLength(0);
+
+    // typeLinksByForm exposes every link in the org for list grouping.
+    const links = await repo.typeLinksByForm("org_rev");
+    expect(links).toEqual([
+      { formId: form.id, type: { id: van.id, name: "Van" } },
+    ]);
+  });
 });

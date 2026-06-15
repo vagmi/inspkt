@@ -133,6 +133,7 @@ export function fakeInspection(
   return {
     id: "insp_1",
     orgId: "org_test_1",
+    equipmentId: "equip_1",
     facilityId: "facility_1",
     formId: "form_1",
     inspectorUserId: "user_test_1",
@@ -271,6 +272,9 @@ export function mockEquipmentTypesRepo() {
     listByOrg: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
+    typesForForm: vi.fn(),
+    setTypesForForm: vi.fn(),
+    typeLinksByForm: vi.fn(),
   };
 }
 

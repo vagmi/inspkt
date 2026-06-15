@@ -1,3 +1,6 @@
+import type { Client, ClientsRepo } from "../repositories/clients-repo";
+import type { Equipment, EquipmentRepo } from "../repositories/equipment-repo";
+import type { EquipmentTypesRepo } from "../repositories/equipment-types-repo";
 import type { Facility, FacilitiesRepo } from "../repositories/facilities-repo";
 import type { FormWithCheckpoints, FormsRepo } from "../repositories/forms-repo";
 import type {
@@ -17,56 +20,85 @@ import { LOCATION_MISMATCH_THRESHOLD_M, haversineMeters } from "./geo";
 
 export interface InspectionsServiceDeps {
   inspectionsRepo: InspectionsRepo;
+  equipmentRepo: EquipmentRepo;
+  equipmentTypesRepo: EquipmentTypesRepo;
   facilitiesRepo: FacilitiesRepo;
+  clientsRepo: ClientsRepo;
   formsRepo: FormsRepo;
 }
 
-/** A draft/submitted inspection joined with the form being walked, the facility
- * under inspection, and a computed location-mismatch distance. */
+/** A draft/submitted inspection joined with the form being walked, the
+ * equipment under inspection (plus its facility/client for context), and a
+ * computed location-mismatch distance. `facility` is null for mobile equipment. */
 export interface InspectionDetail extends InspectionWithObservations {
   form: FormWithCheckpoints;
-  facility: Facility;
+  equipment: Equipment;
+  facility: Facility | null;
+  client: Client | null;
   /** Metres between captured and registered location, or null if either is
-   * absent. `locationMismatch` is true past the threshold. */
+   * absent. `locationMismatch` is true past the threshold. The registered
+   * location is the equipment's own, falling back to its facility's. */
   locationDistanceMeters: number | null;
   locationMismatch: boolean;
 }
 
 export function createInspectionsService({
   inspectionsRepo,
+  equipmentRepo,
+  equipmentTypesRepo,
   facilitiesRepo,
+  clientsRepo,
   formsRepo,
 }: InspectionsServiceDeps) {
   async function loadDetail(
     orgId: string,
     inspection: InspectionWithObservations,
   ): Promise<InspectionDetail> {
-    const [form, facility] = await Promise.all([
+    if (!inspection.equipmentId)
+      throw new NotFoundError(`inspection ${inspection.id} has no equipment`);
+    const [form, equipment] = await Promise.all([
       formsRepo.getById(orgId, inspection.formId),
-      facilitiesRepo.getById(orgId, inspection.facilityId),
+      equipmentRepo.getById(orgId, inspection.equipmentId),
     ]);
     if (!form) throw new NotFoundError(`form ${inspection.formId} not found`);
-    if (!facility)
-      throw new NotFoundError(`facility ${inspection.facilityId} not found`);
+    if (!equipment)
+      throw new NotFoundError(`equipment ${inspection.equipmentId} not found`);
 
+    // Facility (snapshot on the inspection) and client (owner of the equipment)
+    // are context; either may be absent for mobile equipment.
+    const [facility, client] = await Promise.all([
+      inspection.facilityId
+        ? facilitiesRepo.getById(orgId, inspection.facilityId)
+        : Promise.resolve(null),
+      equipment.clientId
+        ? clientsRepo.getById(orgId, equipment.clientId)
+        : Promise.resolve(null),
+    ]);
+
+    // Compare the capture against the equipment's own location, falling back to
+    // its facility's when the equipment has none registered.
+    const registeredLat = equipment.locationLat ?? facility?.locationLat ?? null;
+    const registeredLng = equipment.locationLng ?? facility?.locationLng ?? null;
     let distance: number | null = null;
     if (
       inspection.capturedLat != null &&
       inspection.capturedLng != null &&
-      facility.locationLat != null &&
-      facility.locationLng != null
+      registeredLat != null &&
+      registeredLng != null
     ) {
       distance = haversineMeters(
         inspection.capturedLat,
         inspection.capturedLng,
-        facility.locationLat,
-        facility.locationLng,
+        registeredLat,
+        registeredLng,
       );
     }
     return {
       ...inspection,
       form,
+      equipment,
       facility,
+      client,
       locationDistanceMeters: distance,
       locationMismatch:
         distance != null && distance > LOCATION_MISMATCH_THRESHOLD_M,
@@ -91,26 +123,37 @@ export function createInspectionsService({
       return loadDetail(orgId, await getOrThrow(orgId, id));
     },
 
-    /** Start a draft. Validates the facility and form both belong to the org. */
+    /** Start a draft against a piece of equipment. The chosen form must be one
+     * of the equipment's type's forms; the inspection's facility is snapshotted
+     * from the equipment (null for mobile). */
     async create(
       orgId: string,
       inspectorUserId: string,
-      input: Pick<InspectionCreate, "facilityId" | "formId"> & {
+      input: Pick<InspectionCreate, "equipmentId" | "formId"> & {
         capturedLat?: number | null;
         capturedLng?: number | null;
       },
     ): Promise<InspectionDetail> {
-      const [facility, form] = await Promise.all([
-        facilitiesRepo.getById(orgId, input.facilityId),
-        formsRepo.getById(orgId, input.formId),
-      ]);
-      if (!facility)
-        throw new NotFoundError(`facility ${input.facilityId} not found`);
-      if (!form) throw new NotFoundError(`form ${input.formId} not found`);
+      const equipment = await equipmentRepo.getById(orgId, input.equipmentId);
+      if (!equipment)
+        throw new NotFoundError(`equipment ${input.equipmentId} not found`);
+
+      const type = await equipmentTypesRepo.getById(orgId, equipment.typeId);
+      if (!type)
+        throw new NotFoundError(`equipment type ${equipment.typeId} not found`);
+
+      // The form must be one of this equipment's type's rubrics (type↔forms is
+      // many-to-many; the inspector picks one).
+      if (!type.forms.some((f) => f.id === input.formId)) {
+        throw new ValidationError(
+          `form ${input.formId} is not an inspection form for ${type.name}`,
+        );
+      }
 
       const created = await inspectionsRepo.create({
         orgId,
-        facilityId: input.facilityId,
+        equipmentId: input.equipmentId,
+        facilityId: equipment.facilityId,
         formId: input.formId,
         inspectorUserId,
         capturedLat: input.capturedLat ?? null,
