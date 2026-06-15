@@ -35,6 +35,18 @@ export interface FieldDef {
   helpText?: string;
 }
 
+/** A stored file value (R2 object key + original filename). */
+export interface FileRef {
+  key: string;
+  name: string;
+}
+
+/** A value stored against a field, shaped by the field's type. */
+export type MetadataValue = string | number | boolean | string[] | FileRef;
+
+/** The metadata an equipment record carries, keyed by its type's field keys. */
+export type Metadata = Record<string, MetadataValue>;
+
 /** An equipment type: the org's taxonomy of inspectable assets (e.g. "Rooftop
  * HVAC", "Light Commercial Vehicle"). A type has one or more inspection
  * **forms** (its rubrics) via the `equipment_type_forms` join, and a **field
@@ -104,6 +116,11 @@ export const equipment = sqliteTable(
     name: text("name").notNull(),
     /** Optional asset tag / serial number. */
     identifier: text("identifier"),
+    /** Custom field values, validated against the type's `fields` schema. */
+    metadata: text("metadata", { mode: "json" })
+      .$type<Metadata>()
+      .notNull()
+      .default({}),
     locationLat: real("location_lat"),
     locationLng: real("location_lng"),
     locationLabel: text("location_label"),

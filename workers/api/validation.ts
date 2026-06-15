@@ -259,6 +259,10 @@ export type EquipmentTypeUpdateInput = z.infer<
 
 // ---- Equipment --------------------------------------------------------
 
+// Metadata is a flat record of values; the equipment service validates it
+// against the type's field schema (validateMetadata).
+const metadataSchema = z.record(z.string(), z.unknown());
+
 export const equipmentCreateSchema = z
   .object({
     clientId: z.string().min(1, "a client is required"),
@@ -267,6 +271,7 @@ export const equipmentCreateSchema = z
     typeId: z.string().min(1, "a type is required"),
     name: z.string().min(1, "name is required").max(200),
     identifier: z.string().max(120).optional(),
+    metadata: metadataSchema.optional(),
     locationLat: z.number().min(-90).max(90).optional(),
     locationLng: z.number().min(-180).max(180).optional(),
     locationLabel: z.string().max(300).optional(),
@@ -280,6 +285,7 @@ export const equipmentUpdateSchema = z
     typeId: z.string().min(1).optional(),
     name: z.string().min(1).max(200).optional(),
     identifier: z.string().max(120).nullable().optional(),
+    metadata: metadataSchema.optional(),
     locationLat: z.number().min(-90).max(90).nullable().optional(),
     locationLng: z.number().min(-180).max(180).nullable().optional(),
     locationLabel: z.string().max(300).nullable().optional(),

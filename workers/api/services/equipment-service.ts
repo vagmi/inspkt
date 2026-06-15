@@ -6,9 +6,13 @@ import type {
   EquipmentRepo,
   EquipmentUpdate,
 } from "../repositories/equipment-repo";
-import type { EquipmentTypesRepo } from "../repositories/equipment-types-repo";
+import type {
+  EquipmentTypesRepo,
+  EquipmentTypeWithForms,
+} from "../repositories/equipment-types-repo";
 import type { FacilitiesRepo } from "../repositories/facilities-repo";
 import { NotFoundError, ValidationError } from "./errors";
+import { validateMetadata } from "./metadata";
 
 // Equipment: assets owned by a client, optionally at one of that client's
 // facilities, of a type. The client and type are validated against the org; a
@@ -31,9 +35,13 @@ export function createEquipmentService({
     if (!(await clientsRepo.getById(orgId, id)))
       throw new NotFoundError(`client ${id} not found`);
   }
-  async function assertType(orgId: string, id: string): Promise<void> {
-    if (!(await equipmentTypesRepo.getById(orgId, id)))
-      throw new NotFoundError(`equipment type ${id} not found`);
+  async function loadType(
+    orgId: string,
+    id: string,
+  ): Promise<EquipmentTypeWithForms> {
+    const type = await equipmentTypesRepo.getById(orgId, id);
+    if (!type) throw new NotFoundError(`equipment type ${id} not found`);
+    return type;
   }
   /** The facility must exist and belong to the owning client. */
   async function assertFacilityForClient(
@@ -76,13 +84,13 @@ export function createEquipmentService({
       orgId: string,
       input: Omit<EquipmentCreate, "orgId">,
     ): Promise<Equipment> {
-      await Promise.all([
-        assertClient(orgId, input.clientId),
-        assertType(orgId, input.typeId),
-      ]);
+      const type = await loadType(orgId, input.typeId);
+      await assertClient(orgId, input.clientId);
       if (input.facilityId) {
         await assertFacilityForClient(orgId, input.facilityId, input.clientId);
       }
+      // Custom field values must match the type's schema.
+      validateMetadata(type.fields, input.metadata);
       return equipmentRepo.create({ ...input, orgId });
     },
 
@@ -92,7 +100,7 @@ export function createEquipmentService({
       patch: EquipmentUpdate,
     ): Promise<Equipment> {
       if (patch.clientId) await assertClient(orgId, patch.clientId);
-      if (patch.typeId !== undefined) await assertType(orgId, patch.typeId);
+      if (patch.typeId !== undefined) await loadType(orgId, patch.typeId);
 
       if (patch.facilityId) {
         // Validate the facility against the effective owner (new client if the
@@ -106,6 +114,18 @@ export function createEquipmentService({
         if (clientId) {
           await assertFacilityForClient(orgId, patch.facilityId, clientId);
         }
+      }
+
+      // Validate metadata against the effective type (new typeId, else current).
+      if (patch.metadata !== undefined) {
+        let typeId = patch.typeId;
+        if (!typeId) {
+          const current = await equipmentRepo.getById(orgId, id);
+          if (!current) throw new NotFoundError(`equipment ${id} not found`);
+          typeId = current.typeId;
+        }
+        const type = await loadType(orgId, typeId);
+        validateMetadata(type.fields, patch.metadata);
       }
 
       const updated = await equipmentRepo.update(orgId, id, patch);

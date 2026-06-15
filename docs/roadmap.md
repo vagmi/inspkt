@@ -164,11 +164,15 @@ for now).
 editor moves to a dedicated page (`/app/equipment-types/:id`) with a
 field-schema builder (key/label/type/required/options) alongside name + forms.
 
-### [ ] Phase 8b — Equipment metadata values
-**Slice:** `equipment.metadata` JSON; service validates values against the
-type's `fields` (required/typed/select-in-options); equipment form renders
-**dynamic inputs** from the selected type (incl. file upload via R2 and
-multi-select); metadata shown on the client/equipment views.
+### [x] Phase 8b — Equipment metadata values
+**Shipped (2026-06-14):** `equipment.metadata` JSON (migration 0012). Pure
+`validateMetadata(fields, metadata)` enforces required/typed/options/file and
+rejects unknown keys; the equipment service runs it against the effective type
+on create/update. The equipment form renders **dynamic inputs** from the
+selected type's schema — text/number/date/yes-no/dropdown/**multi-select**/**file
+upload** (to the private R2 bucket). 195 tests green; deployed. (Read-only
+metadata display on list/client views is a small follow-up; values are visible
+and editable in the form today.)
 
 ### [ ] Phase 8c — Nav cleanup (manage facilities/equipment under a client)
 **Slice:** move facility + equipment create/edit/delete into the client detail

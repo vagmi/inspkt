@@ -85,6 +85,13 @@
       "when": 1781483264516,
       "tag": "0011_low_namorita",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1781484236596,
+      "tag": "0012_nappy_jack_flag",
+      "breakpoints": true
     }
   ]
 }

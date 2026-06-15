@@ -1,0 +1,1 @@
+ALTER TABLE `equipment` ADD `metadata` text DEFAULT '{}' NOT NULL;

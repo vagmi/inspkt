@@ -2,6 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { newId } from "~/lib/id";
 import type { Db } from "../db/client";
 import { clients, equipment, equipmentTypes, facilities } from "../db/schema";
+import type { Metadata } from "../db/schema/equipment";
 import { now } from "../db/schema/helpers";
 
 // Org-scoped equipment: the inspectable assets, each owned by a client,
@@ -24,6 +25,8 @@ export interface EquipmentCreate {
   typeId: string;
   name: string;
   identifier?: string | null;
+  /** Validated against the type's schema by the service before it reaches here. */
+  metadata?: Record<string, unknown>;
   locationLat?: number | null;
   locationLng?: number | null;
   locationLabel?: string | null;
@@ -35,6 +38,7 @@ export interface EquipmentUpdate {
   typeId?: string;
   name?: string;
   identifier?: string | null;
+  metadata?: Record<string, unknown>;
   locationLat?: number | null;
   locationLng?: number | null;
   locationLabel?: string | null;
@@ -81,6 +85,7 @@ export function createEquipmentRepo(db: Db) {
           typeId: input.typeId,
           name: input.name,
           identifier: input.identifier ?? null,
+          metadata: (input.metadata ?? {}) as Metadata,
           locationLat: input.locationLat ?? null,
           locationLng: input.locationLng ?? null,
           locationLabel: input.locationLabel ?? null,
@@ -161,6 +166,8 @@ export function createEquipmentRepo(db: Db) {
       if (patch.typeId !== undefined) set.typeId = patch.typeId;
       if (patch.name !== undefined) set.name = patch.name;
       if (patch.identifier !== undefined) set.identifier = patch.identifier;
+      if (patch.metadata !== undefined)
+        set.metadata = patch.metadata as Metadata;
       if (patch.locationLat !== undefined) set.locationLat = patch.locationLat;
       if (patch.locationLng !== undefined) set.locationLng = patch.locationLng;
       if (patch.locationLabel !== undefined)

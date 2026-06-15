@@ -112,6 +112,40 @@ describe("equipment service", () => {
     expect(equipmentRepo.create).not.toHaveBeenCalled();
   });
 
+  it("create validates metadata against the type's field schema", async () => {
+    const { service, equipmentRepo, clientsRepo, equipmentTypesRepo } =
+      makeService();
+    clientsRepo.getById.mockResolvedValue(fakeClient());
+    equipmentTypesRepo.getById.mockResolvedValue(
+      fakeEquipmentType({
+        fields: [{ key: "vin", label: "VIN", type: "text", required: true }],
+      }),
+    );
+
+    // missing the required VIN → rejected
+    await expect(
+      service.create(ORG, {
+        clientId: "client_1",
+        typeId: "type_1",
+        name: "Van",
+        metadata: {},
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(equipmentRepo.create).not.toHaveBeenCalled();
+
+    // with the VIN → accepted
+    equipmentRepo.create.mockResolvedValue(fakeEquipment());
+    await service.create(ORG, {
+      clientId: "client_1",
+      typeId: "type_1",
+      name: "Van",
+      metadata: { vin: "1FT123" },
+    });
+    expect(equipmentRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ metadata: { vin: "1FT123" } }),
+    );
+  });
+
   it("create rejects an unknown type with NotFound", async () => {
     const { service, equipmentRepo, clientsRepo, equipmentTypesRepo } =
       makeService();

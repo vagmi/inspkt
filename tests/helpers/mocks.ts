@@ -254,6 +254,7 @@ export function fakeEquipment(overrides: Partial<Equipment> = {}): Equipment {
     typeId: "type_1",
     name: "Unit A-1",
     identifier: null,
+    metadata: {},
     locationLat: null,
     locationLng: null,
     locationLabel: null,
