@@ -24,6 +24,41 @@ describe("equipment types repo", () => {
     expect(row?.forms).toHaveLength(2);
   });
 
+  it("persists a custom field schema", async () => {
+    const db = testDb();
+    const repo = createEquipmentTypesRepo(db);
+    await makeOrg(db, "org_fields");
+    const type = await repo.create({
+      orgId: "org_fields",
+      name: "Light Commercial Vehicle",
+      formIds: [],
+      fields: [
+        { key: "license_plate", label: "License Plate", type: "text", required: true },
+        {
+          key: "body_style",
+          label: "Body Style",
+          type: "select",
+          required: false,
+          options: ["Van", "Truck"],
+        },
+      ],
+    });
+    expect(type.fields).toHaveLength(2);
+
+    const loaded = await repo.getById("org_fields", type.id);
+    expect(loaded?.fields[0]).toMatchObject({
+      key: "license_plate",
+      required: true,
+    });
+    expect(loaded?.fields[1].options).toEqual(["Van", "Truck"]);
+
+    // updating the field schema replaces it
+    const updated = await repo.update("org_fields", type.id, {
+      fields: [{ key: "vin", label: "VIN", type: "text", required: true }],
+    });
+    expect(updated?.fields.map((f) => f.key)).toEqual(["vin"]);
+  });
+
   it("can create a type with no forms, then attach one later", async () => {
     const db = testDb();
     const repo = createEquipmentTypesRepo(db);

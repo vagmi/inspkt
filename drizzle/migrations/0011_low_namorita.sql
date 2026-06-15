@@ -1,0 +1,1 @@
+ALTER TABLE `equipment_types` ADD `fields` text DEFAULT '[]' NOT NULL;

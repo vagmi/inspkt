@@ -12,10 +12,33 @@ import { forms } from "./forms";
 import { now } from "./helpers";
 import { organizations } from "./organizations";
 
+/** The data type of a custom field an equipment type tracks. */
+export type FieldType =
+  | "text"
+  | "number"
+  | "date"
+  | "boolean"
+  | "select"
+  | "multiselect"
+  | "file";
+
+/** One custom field in an equipment type's metadata schema. Equipment of the
+ * type stores a value per `key` in its `metadata`. */
+export interface FieldDef {
+  /** Machine key, unique within the type (e.g. "license_plate"). */
+  key: string;
+  label: string;
+  type: FieldType;
+  required: boolean;
+  /** Choices for `select` / `multiselect`. */
+  options?: string[];
+  helpText?: string;
+}
+
 /** An equipment type: the org's taxonomy of inspectable assets (e.g. "Rooftop
- * HVAC", "Delivery Van"). A type has one or more inspection **forms** (its
- * rubrics) via the `equipment_type_forms` join — so an inspection on a piece of
- * equipment chooses among its type's forms (Phase 9). */
+ * HVAC", "Light Commercial Vehicle"). A type has one or more inspection
+ * **forms** (its rubrics) via the `equipment_type_forms` join, and a **field
+ * schema** (`fields`) describing the metadata its equipment must track. */
 export const equipmentTypes = sqliteTable(
   "equipment_types",
   {
@@ -25,6 +48,11 @@ export const equipmentTypes = sqliteTable(
       .references(() => organizations.id),
     name: text("name").notNull(),
     description: text("description"),
+    /** The custom-field schema for equipment of this type. */
+    fields: text("fields", { mode: "json" })
+      .$type<FieldDef[]>()
+      .notNull()
+      .default([]),
     createdAt: integer("created_at").notNull().$defaultFn(now),
     updatedAt: integer("updated_at").notNull().$defaultFn(now),
   },

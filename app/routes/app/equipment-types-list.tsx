@@ -1,12 +1,8 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useRef, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
 import { Link, redirect, useFetcher } from "react-router";
 import { toast } from "sonner";
-import { z } from "zod";
 import { Button } from "~/components/ui/button";
-import { Checkbox } from "~/components/ui/checkbox";
 import { DataTable } from "~/components/ui/data-table";
 import {
   Dialog,
@@ -16,20 +12,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
-import { Textarea } from "~/components/ui/textarea";
+import { Label } from "~/components/ui/label";
 import { actorFromRole, can, landingPath } from "~/lib/capabilities";
 import { ApiError, apiFetch } from "~/lib/api-client.server";
 import type { EquipmentTypeWithForms } from "../../../workers/api/repositories/equipment-types-repo";
-import type { Form as InspectionForm } from "../../../workers/api/repositories/forms-repo";
 import type { Route } from "./+types/equipment-types-list";
 
 export function meta() {
@@ -41,26 +28,20 @@ export async function loader({ request }: Route.LoaderArgs) {
   const actor = actorFromRole(me.role);
   if (!can.setup(actor)) throw redirect(landingPath(actor));
 
-  const [typesRes, formsRes] = await Promise.all([
-    apiFetch<{ types: EquipmentTypeWithForms[] }>(
-      request,
-      "/api/equipment-types",
-    ),
-    apiFetch<{ forms: InspectionForm[] }>(request, "/api/forms"),
-  ]);
-  return { types: typesRes.types, forms: formsRes.forms };
+  const { types } = await apiFetch<{ types: EquipmentTypeWithForms[] }>(
+    request,
+    "/api/equipment-types",
+  );
+  return { types };
 }
 
 export async function action({ request }: Route.ActionArgs) {
-  const body = (await request.json()) as {
-    intent: "create" | "update" | "delete";
-    id?: string;
-    type?: Record<string, unknown>;
-  };
+  const form = await request.formData();
+  const intent = String(form.get("intent") ?? "");
 
-  if (body.intent === "delete") {
+  if (intent === "delete") {
     try {
-      await apiFetch(request, `/api/equipment-types/${body.id}`, {
+      await apiFetch(request, `/api/equipment-types/${form.get("id")}`, {
         method: "DELETE",
       });
       return { ok: true };
@@ -72,188 +53,65 @@ export async function action({ request }: Route.ActionArgs) {
     }
   }
 
-  const path =
-    body.intent === "update"
-      ? `/api/equipment-types/${body.id}`
-      : "/api/equipment-types";
-  await apiFetch(request, path, {
-    method: body.intent === "update" ? "PATCH" : "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body.type ?? {}),
-  });
-  return { ok: true };
+  // create a bare type, then open its editor (name + forms + field schema)
+  const name = String(form.get("name") ?? "").trim();
+  if (!name) return { ok: false, error: "Give the type a name." };
+  const res = await apiFetch<{ type: { id: string } }>(
+    request,
+    "/api/equipment-types",
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name, formIds: [], fields: [] }),
+    },
+  );
+  throw redirect(`/app/equipment-types/${res.type.id}`);
 }
 
-const typeFormSchema = z.object({
-  name: z.string().min(1, "Name is required").max(200),
-  // Forms are optional — attach them now or later.
-  formIds: z.array(z.string()),
-  description: z.string().max(2000).optional(),
-});
-type TypeFormValues = z.infer<typeof typeFormSchema>;
-
-function toDefaults(t?: EquipmentTypeWithForms): TypeFormValues {
-  return {
-    name: t?.name ?? "",
-    formIds: t?.forms.map((f) => f.id) ?? [],
-    description: t?.description ?? "",
-  };
-}
-
-function TypeDialog({
-  type,
-  forms,
-  trigger,
-}: {
-  type?: EquipmentTypeWithForms;
-  forms: InspectionForm[];
-  trigger: React.ReactNode;
-}) {
+function NewTypeDialog() {
   const fetcher = useFetcher<typeof action>();
   const [open, setOpen] = useState(false);
-  const form = useForm<TypeFormValues>({
-    resolver: zodResolver(typeFormSchema),
-    defaultValues: toDefaults(type),
-  });
+  const ref = useRef<HTMLFormElement>(null);
   const busy = fetcher.state !== "idle";
-
-  useEffect(() => {
-    if (open) form.reset(toDefaults(type));
-  }, [open, type, form]);
-
-  useEffect(() => {
-    if (fetcher.state === "idle" && fetcher.data?.ok && open) {
-      setOpen(false);
-      toast.success(type ? "Type updated" : "Type created");
-    }
-  }, [fetcher.state, fetcher.data, open, type]);
-
-  function onSubmit(values: TypeFormValues) {
-    const typePayload: Record<string, unknown> = {
-      name: values.name.trim(),
-      formIds: values.formIds,
-    };
-    if (values.description?.trim())
-      typePayload.description = values.description.trim();
-    const payload = JSON.parse(
-      JSON.stringify({
-        intent: type ? "update" : "create",
-        id: type?.id,
-        type: typePayload,
-      }),
-    );
-    fetcher.submit(payload, { method: "post", encType: "application/json" });
-  }
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <span onClick={() => setOpen(true)}>{trigger}</span>
+      <Button onClick={() => setOpen(true)}>New type</Button>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{type ? "Edit type" : "New equipment type"}</DialogTitle>
+          <DialogTitle>New equipment type</DialogTitle>
           <DialogDescription>
-            A type carries the form used to inspect equipment of that kind.
+            Name it — next you'll define its fields and attach inspection forms.
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
+        <fetcher.Form method="post" ref={ref} className="space-y-4">
+          <div>
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
               name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Rooftop HVAC" autoFocus {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              placeholder="Light Commercial Vehicle"
+              autoFocus
+              required
+              className="mt-1.5"
             />
-            <FormField
-              control={form.control}
-              name="formIds"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Inspection forms (optional)</FormLabel>
-                  <p className="text-muted-foreground text-xs">
-                    The rubrics that apply to this type. Attach them now or
-                    later — an inspection picks one of them.
-                  </p>
-                  {forms.length === 0 ? (
-                    <p className="text-muted-foreground rounded-md border border-dashed p-3 text-sm">
-                      No forms yet. Create some on the{" "}
-                      <Link to="/app/forms" className="underline">
-                        Forms
-                      </Link>{" "}
-                      page and attach them here later.
-                    </p>
-                  ) : (
-                    <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border p-3">
-                      {forms.map((f) => {
-                        const checked = field.value?.includes(f.id);
-                        return (
-                          <label
-                            key={f.id}
-                            className="flex items-center gap-2 text-sm"
-                          >
-                            <Checkbox
-                              checked={checked}
-                              onCheckedChange={(v) =>
-                                field.onChange(
-                                  v === true
-                                    ? [...(field.value ?? []), f.id]
-                                    : (field.value ?? []).filter(
-                                        (x) => x !== f.id,
-                                      ),
-                                )
-                              }
-                            />
-                            {f.name}
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Optional" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button type="submit" disabled={busy}>
-                {busy ? "Saving…" : type ? "Save changes" : "Create type"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+          </div>
+          {fetcher.data && fetcher.data.ok === false && (
+            <p className="text-destructive text-sm">{fetcher.data.error}</p>
+          )}
+          <DialogFooter>
+            <Button type="submit" disabled={busy}>
+              {busy ? "Creating…" : "Create & edit"}
+            </Button>
+          </DialogFooter>
+        </fetcher.Form>
       </DialogContent>
     </Dialog>
   );
 }
 
-function RowActions({
-  type,
-  forms,
-}: {
-  type: EquipmentTypeWithForms;
-  forms: InspectionForm[];
-}) {
+function DeleteButton({ id, name }: { id: string; name: string }) {
   const fetcher = useFetcher<typeof action>();
   const busy = fetcher.state !== "idle";
-
   useEffect(() => {
     if (fetcher.state === "idle" && fetcher.data?.ok === false) {
       try {
@@ -266,50 +124,49 @@ function RowActions({
       }
     }
   }, [fetcher.state, fetcher.data]);
-
   return (
-    <div className="flex items-center justify-end gap-3">
-      <TypeDialog
-        type={type}
-        forms={forms}
-        trigger={
-          <button
-            type="button"
-            className="form-label-mono text-muted-foreground/70 hover:text-foreground text-[10px]"
-          >
-            Edit
-          </button>
-        }
-      />
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => {
-          if (!confirm(`Delete ${type.name}?`)) return;
-          fetcher.submit(
-            { intent: "delete", id: type.id },
-            { method: "post", encType: "application/json" },
-          );
-        }}
-        className="form-label-mono text-muted-foreground/60 hover:text-destructive text-[10px] disabled:opacity-50"
-      >
-        {busy ? "Deleting…" : "Delete"}
-      </button>
-    </div>
+    <button
+      type="button"
+      disabled={busy}
+      onClick={() => {
+        if (!confirm(`Delete ${name}?`)) return;
+        fetcher.submit(
+          { intent: "delete", id },
+          { method: "post" },
+        );
+      }}
+      className="form-label-mono text-muted-foreground/60 hover:text-destructive text-[10px] disabled:opacity-50"
+    >
+      {busy ? "Deleting…" : "Delete"}
+    </button>
   );
 }
 
 export default function EquipmentTypesList({
   loaderData,
 }: Route.ComponentProps) {
-  const { types, forms } = loaderData;
+  const { types } = loaderData;
 
   const columns: ColumnDef<EquipmentTypeWithForms>[] = [
     {
       accessorKey: "name",
       header: "Type",
       cell: ({ row }) => (
-        <span className="font-medium">{row.original.name}</span>
+        <Link
+          to={`/app/equipment-types/${row.original.id}`}
+          className="font-medium hover:underline"
+        >
+          {row.original.name}
+        </Link>
+      ),
+    },
+    {
+      id: "fields",
+      header: "Fields",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">
+          {row.original.fields.length}
+        </span>
       ),
     },
     {
@@ -326,7 +183,11 @@ export default function EquipmentTypesList({
     {
       id: "actions",
       header: () => <span className="sr-only">Actions</span>,
-      cell: ({ row }) => <RowActions type={row.original} forms={forms} />,
+      cell: ({ row }) => (
+        <div className="text-right">
+          <DeleteButton id={row.original.id} name={row.original.name} />
+        </div>
+      ),
     },
   ];
 
@@ -337,11 +198,11 @@ export default function EquipmentTypesList({
           <p className="form-label-mono text-muted-foreground">Setup</p>
           <h1 className="mt-2 text-3xl">Equipment types</h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            The kinds of asset you inspect. A type can carry one or more
-            inspection forms.
+            The kinds of asset you inspect. Each defines the fields its equipment
+            tracks and the forms used to inspect it.
           </p>
         </div>
-        <TypeDialog forms={forms} trigger={<Button>New type</Button>} />
+        <NewTypeDialog />
       </div>
 
       <div className="rule-perforated mt-6" />

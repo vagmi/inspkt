@@ -195,11 +195,49 @@ export type ClientUpdateInput = z.infer<typeof clientUpdateSchema>;
 
 // ---- Equipment types --------------------------------------------------
 
+/** A custom field definition in an equipment type's schema. */
+export const fieldDefSchema = z
+  .object({
+    key: z
+      .string()
+      .min(1)
+      .max(64)
+      .regex(/^[a-z][a-z0-9_]*$/, "key must be snake_case (a-z, 0-9, _)"),
+    label: z.string().min(1, "label is required").max(200),
+    type: z.enum([
+      "text",
+      "number",
+      "date",
+      "boolean",
+      "select",
+      "multiselect",
+      "file",
+    ]),
+    required: z.boolean().default(false),
+    options: z.array(z.string().min(1).max(200)).max(100).optional(),
+    helpText: z.string().max(500).optional(),
+  })
+  .refine(
+    (f) =>
+      (f.type !== "select" && f.type !== "multiselect") ||
+      (f.options !== undefined && f.options.length > 0),
+    { message: "select fields need at least one option", path: ["options"] },
+  );
+
+const fieldsArray = z
+  .array(fieldDefSchema)
+  .max(100)
+  .refine(
+    (fields) => new Set(fields.map((f) => f.key)).size === fields.length,
+    "field keys must be unique",
+  );
+
 export const equipmentTypeCreateSchema = z.object({
   name: z.string().min(1, "name is required").max(200),
   // Forms are optional — a type can be defined first and have forms attached
   // later. Defaults to none.
   formIds: z.array(z.string().min(1)).max(50).default([]),
+  fields: fieldsArray.default([]),
   description: z.string().max(2000).optional(),
 });
 
@@ -207,6 +245,7 @@ export const equipmentTypeUpdateSchema = z
   .object({
     name: z.string().min(1).max(200).optional(),
     formIds: z.array(z.string().min(1)).max(50).optional(),
+    fields: fieldsArray.optional(),
     description: z.string().max(2000).nullable().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, "no fields to update");

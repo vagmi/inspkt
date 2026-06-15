@@ -151,6 +151,30 @@ no-op inside D1's migration transaction — safe here only because no equipment
 types existed yet (verified empty before deploy); the backfill must precede the
 rebuild. 172 tests green.
 
+### [ ] Phase 8a — Equipment-type custom field schema
+**Goal:** each type defines the metadata its equipment must track (e.g. a Light
+Commercial Vehicle: license plate, make, model, VIN, insurance). API-first so
+types can be scripted/imported.
+**Decisions (2026-06-14):** JSON storage — `equipment_types.fields` (array of
+field defs) + `equipment.metadata` (key→value); display/inspection use, no SQL
+reporting layer; field types **text, number, date, yes/no, dropdown,
+multi-select, file**; machine API keys deferred (endpoints stay Clerk-session
+for now).
+**Slice (this increment):** `equipment_types.fields` JSON + validation; type
+editor moves to a dedicated page (`/app/equipment-types/:id`) with a
+field-schema builder (key/label/type/required/options) alongside name + forms.
+
+### [ ] Phase 8b — Equipment metadata values
+**Slice:** `equipment.metadata` JSON; service validates values against the
+type's `fields` (required/typed/select-in-options); equipment form renders
+**dynamic inputs** from the selected type (incl. file upload via R2 and
+multi-select); metadata shown on the client/equipment views.
+
+### [ ] Phase 8c — Nav cleanup (manage facilities/equipment under a client)
+**Slice:** move facility + equipment create/edit/delete into the client detail
+page; drop `Facilities` and `Equipment` from the top nav (→ Inspections ·
+Clients · Types · Forms · Members); admin landing becomes Clients.
+
 ### [ ] Phase 9 — Retarget inspections to Equipment
 **Goal:** inspections are performed against equipment, not bare items.
 **Slice:** add `equipment_id` to `inspections` (migrate `item_id` →

@@ -28,6 +28,8 @@ function json(body: unknown, method = "POST"): RequestInit {
 }
 
 const valid = { name: "Rooftop HVAC", formIds: ["form_1", "form_2"] };
+// What the service receives after zod fills defaults (fields defaults to []).
+const validParsed = { ...valid, fields: [] };
 
 describe("equipment types controller", () => {
   it("GET lists for any member", async () => {
@@ -42,7 +44,7 @@ describe("equipment types controller", () => {
     types.create.mockResolvedValue({ ...fakeEquipmentType(), forms: [] });
     const res = await app.request("/equipment-types", json(valid));
     expect(res.status).toBe(201);
-    expect(types.create).toHaveBeenCalledWith("org_test_1", valid);
+    expect(types.create).toHaveBeenCalledWith("org_test_1", validParsed);
   });
 
   it("POST 403s an inspector", async () => {
@@ -62,7 +64,69 @@ describe("equipment types controller", () => {
     expect(types.create).toHaveBeenCalledWith("org_test_1", {
       name: "Bare",
       formIds: [],
+      fields: [],
     });
+  });
+
+  it("POST accepts a valid field schema", async () => {
+    const { app, types } = makeApp("admin");
+    types.create.mockResolvedValue({ ...fakeEquipmentType(), forms: [] });
+    const res = await app.request(
+      "/equipment-types",
+      json({
+        name: "Vehicle",
+        fields: [
+          { key: "vin", label: "VIN", type: "text", required: true },
+          {
+            key: "style",
+            label: "Style",
+            type: "select",
+            options: ["Van", "Truck"],
+          },
+        ],
+      }),
+    );
+    expect(res.status).toBe(201);
+  });
+
+  it("POST 400s a select field with no options", async () => {
+    const { app, types } = makeApp("admin");
+    const res = await app.request(
+      "/equipment-types",
+      json({
+        name: "Bad",
+        fields: [{ key: "style", label: "Style", type: "select" }],
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect(types.create).not.toHaveBeenCalled();
+  });
+
+  it("POST 400s duplicate field keys", async () => {
+    const { app } = makeApp("admin");
+    const res = await app.request(
+      "/equipment-types",
+      json({
+        name: "Dup",
+        fields: [
+          { key: "vin", label: "VIN", type: "text" },
+          { key: "vin", label: "VIN 2", type: "text" },
+        ],
+      }),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("POST 400s a non-snake_case field key", async () => {
+    const { app } = makeApp("admin");
+    const res = await app.request(
+      "/equipment-types",
+      json({
+        name: "BadKey",
+        fields: [{ key: "License Plate", label: "License", type: "text" }],
+      }),
+    );
+    expect(res.status).toBe(400);
   });
 
   it("DELETE maps the in-use guard to 422", async () => {

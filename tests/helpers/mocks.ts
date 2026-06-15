@@ -238,6 +238,7 @@ export function fakeEquipmentType(
     orgId: "org_test_1",
     name: "Rooftop HVAC",
     description: null,
+    fields: [],
     createdAt: 1_700_000_000,
     updatedAt: 1_700_000_000,
     ...overrides,

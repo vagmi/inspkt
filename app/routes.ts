@@ -16,6 +16,7 @@ export default [
     route("clients/:clientId", "routes/app/client-detail.tsx"),
     route("equipment", "routes/app/equipment-list.tsx"),
     route("equipment-types", "routes/app/equipment-types-list.tsx"),
+    route("equipment-types/:typeId", "routes/app/equipment-types-edit.tsx"),
     route("forms", "routes/app/forms-list.tsx"),
     route("forms/:formId", "routes/app/forms-edit.tsx"),
     route("inspections", "routes/app/inspections-list.tsx"),

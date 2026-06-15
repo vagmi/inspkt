@@ -2,6 +2,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import { newId } from "~/lib/id";
 import type { Db } from "../db/client";
 import { equipmentTypeForms, equipmentTypes, forms } from "../db/schema";
+import type { FieldDef } from "../db/schema/equipment";
 import { now } from "../db/schema/helpers";
 
 // Org-scoped taxonomy of equipment types. A type has one or more inspection
@@ -23,12 +24,14 @@ export interface EquipmentTypeCreate {
   orgId: string;
   name: string;
   formIds: string[];
+  fields?: FieldDef[];
   description?: string | null;
 }
 
 export interface EquipmentTypeUpdate {
   name?: string;
   formIds?: string[];
+  fields?: FieldDef[];
   description?: string | null;
 }
 
@@ -81,6 +84,7 @@ export function createEquipmentTypesRepo(db: Db) {
           orgId: input.orgId,
           name: input.name,
           description: input.description ?? null,
+          fields: input.fields ?? [],
         })
         .returning();
       await setForms(input.orgId, row.id, input.formIds);
@@ -147,6 +151,7 @@ export function createEquipmentTypesRepo(db: Db) {
       };
       if (patch.name !== undefined) set.name = patch.name;
       if (patch.description !== undefined) set.description = patch.description;
+      if (patch.fields !== undefined) set.fields = patch.fields;
 
       const [row] = await db
         .update(equipmentTypes)
