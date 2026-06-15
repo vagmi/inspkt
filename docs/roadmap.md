@@ -174,10 +174,15 @@ upload** (to the private R2 bucket). 195 tests green; deployed. (Read-only
 metadata display on list/client views is a small follow-up; values are visible
 and editable in the form today.)
 
-### [ ] Phase 8c — Nav cleanup (manage facilities/equipment under a client)
-**Slice:** move facility + equipment create/edit/delete into the client detail
-page; drop `Facilities` and `Equipment` from the top nav (→ Inspections ·
-Clients · Types · Forms · Members); admin landing becomes Clients.
+### [x] Phase 8c — Nav cleanup (manage facilities/equipment under a client)
+**Shipped (2026-06-14):** facility + equipment create/edit/delete moved into the
+**client detail page** (a multi-intent action; dialogs are client-fixed,
+equipment dialog scopes the facility picker to the client and includes the
+dynamic `MetadataFields`, now a shared component). Standalone
+`/app/facilities` and `/app/equipment` routes removed. Top nav trimmed to
+**Inspections · Clients · Types · Forms · Members**; the admin/manager landing
+(`/app`) is now Clients. (API endpoints unchanged — only the UI moved.) 195
+tests green; deployed.
 
 ### [ ] Phase 9 — Retarget inspections to Equipment
 **Goal:** inspections are performed against equipment, not bare items.

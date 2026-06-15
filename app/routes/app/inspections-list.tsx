@@ -191,7 +191,7 @@ function NewInspectionDialog({
             </Link>{" "}
             and one{" "}
             <Link to="/app" className="underline">
-              facility
+              client facility
             </Link>{" "}
             first.
           </p>
