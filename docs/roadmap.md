@@ -184,7 +184,7 @@ dynamic `MetadataFields`, now a shared component). Standalone
 (`/app`) is now Clients. (API endpoints unchanged — only the UI moved.) 195
 tests green; deployed.
 
-### [ ] Phase 9 — Retarget inspections to Equipment
+### [x] Phase 9 — Retarget inspections to Equipment
 **Goal:** inspections are performed against equipment, not bare items.
 **Slice:** add `equipment_id` to `inspections` (migrate `item_id` →
 `equipment_id`; the form is derived/validated from the equipment's type) →
@@ -194,7 +194,7 @@ auto-selects the type's form. Location mismatch now compares against the
 equipment's (or facility's) registered location.
 **Done when:** start an inspection by choosing equipment; capture + submit work
 as before; tests green; deploys.
-**Built (2026-06-15, not yet deployed):** schema adds `equipment_id` (nullable
+**Shipped (2026-06-15, deployed):** schema adds `equipment_id` (nullable
 DB / app-required) and relaxes `item_id`/`facilityId` to nullable (mobile
 equipment has no facility) — migration `0013` (a table rebuild; hand-edited so
 the new column omits from the copy and defaults NULL, safe because
@@ -205,10 +205,12 @@ and the location check prefers the equipment's own coords, falling back to the
 facility's. `InspectionDetail` exposes `equipment` + nullable `facility`/`client`.
 UI: the new-inspection dialog picks **equipment** (only those whose type has ≥1
 form) then a type-scoped **form** (auto-selected when the type has exactly one);
-list rows + capture header show equipment with client/facility context. 198
-tests + typecheck + build green locally. **Remaining to ship:** verify remote
-`inspections` empty → `pnpm db:migrate:remote` → `pnpm build && wrangler deploy`
-→ smoke-test, then check this box.
+list rows + capture header show equipment with client/facility context. Deployed
+2026-06-15 (migrations `0013`/`0014` applied remote; `inspections` verified empty
+before the `0013` rebuild).
+**Also shipped same deploy:** form↔type association editable from the form side
+(`/app/forms/:id`), and **machine API keys** (`/app/api-keys`, `inspkt_…` Bearer,
+HMAC-hashed with `API_KEY_PEPPER`) — see `docs/api-access.md`. 232 tests green.
 
 ### [ ] Phase 10 — Assignments & inspector queue
 **Goal:** managers assign work; inspectors execute it.
