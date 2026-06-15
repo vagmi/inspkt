@@ -1,4 +1,5 @@
 import { getDb } from "../db/client";
+import { createApiKeysRepo } from "../repositories/api-keys-repo";
 import { createClientsRepo } from "../repositories/clients-repo";
 import { createEquipmentRepo } from "../repositories/equipment-repo";
 import { createEquipmentTypesRepo } from "../repositories/equipment-types-repo";
@@ -9,6 +10,7 @@ import { createMembershipsRepo } from "../repositories/memberships-repo";
 import { createOrganizationsRepo } from "../repositories/organizations-repo";
 import { createUsageRepo } from "../repositories/usage-repo";
 import { createUsersRepo } from "../repositories/users-repo";
+import { createApiKeysService } from "./api-keys-service";
 import { createClientsService } from "./clients-service";
 import { createEquipmentService } from "./equipment-service";
 import { createEquipmentTypesService } from "./equipment-types-service";
@@ -38,6 +40,7 @@ export function createServices(env: Env) {
   const clientsRepo = createClientsRepo(db);
   const equipmentTypesRepo = createEquipmentTypesRepo(db);
   const equipmentRepo = createEquipmentRepo(db);
+  const apiKeysRepo = createApiKeysRepo(db);
 
   return {
     organizations: createOrganizationsService({ orgsRepo }),
@@ -70,6 +73,11 @@ export function createServices(env: Env) {
       equipmentTypesRepo,
     }),
     uploads: createUploadsService({ bucket: env.UPLOADS }),
+    apiKeys: createApiKeysService({
+      apiKeysRepo,
+      orgsRepo,
+      pepper: env.API_KEY_PEPPER,
+    }),
   };
 }
 

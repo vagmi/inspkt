@@ -20,5 +20,6 @@ export default [
     route("inspections", "routes/app/inspections-list.tsx"),
     route("inspections/:inspectionId", "routes/app/inspection-capture.tsx"),
     route("members", "routes/app/members.tsx"),
+    route("api-keys", "routes/app/api-keys.tsx"),
   ]),
 ] satisfies RouteConfig;

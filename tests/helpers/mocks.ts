@@ -1,4 +1,5 @@
 import { vi } from "vitest";
+import type { ApiKey } from "../../workers/api/repositories/api-keys-repo";
 import type { Client } from "../../workers/api/repositories/clients-repo";
 import type { Equipment } from "../../workers/api/repositories/equipment-repo";
 import type { EquipmentType } from "../../workers/api/repositories/equipment-types-repo";
@@ -310,6 +311,43 @@ export function mockEquipmentService() {
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
+  };
+}
+
+export function fakeApiKey(overrides: Partial<ApiKey> = {}): ApiKey {
+  return {
+    id: "key_1",
+    orgId: "org_test_1",
+    name: "CI import job",
+    tokenHash: "hash_1",
+    prefix: "inspkt_a1b2c3d4",
+    createdByUserId: "user_test_1",
+    lastUsedAt: null,
+    expiresAt: null,
+    revokedAt: null,
+    createdAt: 1_700_000_000,
+    updatedAt: 1_700_000_000,
+    ...overrides,
+  };
+}
+
+export function mockApiKeysRepo() {
+  return {
+    create: vi.fn(),
+    findByHash: vi.fn(),
+    listByOrg: vi.fn(),
+    getById: vi.fn(),
+    revoke: vi.fn(),
+    touchLastUsed: vi.fn(),
+  };
+}
+
+export function mockApiKeysService() {
+  return {
+    list: vi.fn(),
+    create: vi.fn(),
+    revoke: vi.fn(),
+    authenticate: vi.fn(),
   };
 }
 

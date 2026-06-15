@@ -306,3 +306,13 @@ export const memberRoleSchema = z.object({
 });
 
 export type MemberRoleInput = z.infer<typeof memberRoleSchema>;
+
+// ---- API keys ---------------------------------------------------------
+
+export const apiKeyCreateSchema = z.object({
+  name: z.string().min(1, "name is required").max(100),
+  /** Optional hard expiry (unix seconds). */
+  expiresAt: z.number().int().positive().optional(),
+});
+
+export type ApiKeyCreateInput = z.infer<typeof apiKeyCreateSchema>;

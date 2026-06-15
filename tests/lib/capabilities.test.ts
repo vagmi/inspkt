@@ -40,8 +40,13 @@ describe("capabilities by role", () => {
     }
   });
 
-  it("manageRoles / removeMember / manageOrg: admins only", () => {
-    for (const cap of [can.manageRoles, can.removeMember, can.manageOrg]) {
+  it("manageRoles / removeMember / manageOrg / manageApiKeys: admins only", () => {
+    for (const cap of [
+      can.manageRoles,
+      can.removeMember,
+      can.manageOrg,
+      can.manageApiKeys,
+    ]) {
       expect(cap(admin)).toBe(true);
       expect(cap(manager)).toBe(false);
       expect(cap(inspector)).toBe(false);

@@ -1,6 +1,7 @@
 import { clerkMiddleware } from "@clerk/hono";
 import { Hono } from "hono";
 import { domainErrorHandler } from "./controllers/error-handler";
+import { createApiKeysController } from "./controllers/api-keys-controller";
 import { createClientsController } from "./controllers/clients-controller";
 import { createEquipmentController } from "./controllers/equipment-controller";
 import { createEquipmentTypesController } from "./controllers/equipment-types-controller";
@@ -10,7 +11,7 @@ import { createInspectionsController } from "./controllers/inspections-controlle
 import { createIntegrationsController } from "./controllers/integrations-controller";
 import { createMembersController } from "./controllers/members-controller";
 import { createUploadsController } from "./controllers/uploads-controller";
-import { requireOrg } from "./middleware/auth";
+import { requireOrgOrApiKey } from "./middleware/auth";
 import { injectServices } from "./middleware/services";
 import type { ApiEnv } from "./types";
 
@@ -40,7 +41,8 @@ export function createApi() {
   const authed = new Hono<ApiEnv>();
   authed.use(clerkMiddleware());
   authed.use(injectServices);
-  authed.use(requireOrg);
+  // Accepts a human Clerk session OR a machine API key (Bearer inspkt_…).
+  authed.use(requireOrgOrApiKey);
 
   authed.get("/me", (c) =>
     c.json({
@@ -61,6 +63,7 @@ export function createApi() {
   authed.route("/inspections", createInspectionsController());
   authed.route("/uploads", createUploadsController());
   authed.route("/members", createMembersController());
+  authed.route("/api-keys", createApiKeysController());
 
   app.route("/", authed);
 

@@ -9,6 +9,10 @@ interface Env {
   CLERK_PUBLISHABLE_KEY: string;
   CLERK_WEBHOOK_SECRET: string;
   APP_URL: string;
+  // HMAC pepper for hashing API keys (machine access). Set once and treat as
+  // permanent — rotating it invalidates every existing key. `wrangler secret
+  // put API_KEY_PEPPER` in prod; a value in .dev.vars for local dev.
+  API_KEY_PEPPER: string;
   // r2-uploads (Phase 3): the UPLOADS R2Bucket binding is typed by
   // `wrangler types`. The bucket is PRIVATE — photos are served through the
   // authenticated /api/uploads/:key route, so there is no public base URL.

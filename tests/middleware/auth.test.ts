@@ -4,7 +4,9 @@ import { describe, expect, it, vi } from "vitest";
 import { can } from "../../app/lib/capabilities";
 import {
   requireCapability,
+  requireHuman,
   requireOrg,
+  requireOrgOrApiKey,
 } from "../../workers/api/middleware/auth";
 import type { ApiEnv } from "../../workers/api/types";
 import { fakeMembership, fakeOrg, fakeUser } from "../helpers/mocks";
@@ -90,6 +92,79 @@ describe("requireOrg middleware", () => {
       "user_1",
       "org:admin",
     );
+  });
+});
+
+describe("requireOrgOrApiKey middleware (API-key path)", () => {
+  const TOKEN = `Bearer inspkt_${"a".repeat(64)}`;
+
+  function keyApp(authResult: unknown) {
+    const authenticate = vi.fn().mockResolvedValue(authResult);
+    const app = new Hono<ApiEnv>();
+    app.use(async (c, next) => {
+      c.set("services", { apiKeys: { authenticate } } as never);
+      await next();
+    });
+    app.use(requireOrgOrApiKey);
+    app.get("/probe", (c) =>
+      c.json({
+        orgId: c.var.orgId,
+        userId: c.var.userId,
+        role: c.var.role,
+        authMethod: c.var.authMethod,
+      }),
+    );
+    return { app, authenticate };
+  }
+
+  it("authenticates a valid key as a manager scoped to its org", async () => {
+    const { app, authenticate } = keyApp({
+      org: fakeOrg({ id: "org_42" }),
+      createdByUserId: "user_9",
+      apiKeyId: "key_1",
+    });
+
+    const res = await app.request("/probe", {
+      headers: { Authorization: TOKEN },
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as Record<string, string>;
+    expect(body).toMatchObject({
+      orgId: "org_42",
+      userId: "user_9", // attributed to the key's creator
+      role: "manager",
+      authMethod: "apikey",
+    });
+    expect(authenticate).toHaveBeenCalledWith(`inspkt_${"a".repeat(64)}`);
+  });
+
+  it("401s an invalid/unknown key", async () => {
+    const { app } = keyApp(null);
+    const res = await app.request("/probe", {
+      headers: { Authorization: TOKEN },
+    });
+    expect(res.status).toBe(401);
+  });
+});
+
+describe("requireHuman middleware", () => {
+  function humanApp(authMethod: string) {
+    const app = new Hono<ApiEnv>();
+    app.use(async (c, next) => {
+      c.set("authMethod", authMethod as never);
+      await next();
+    });
+    app.use(requireHuman);
+    app.get("/human-only", (c) => c.json({ ok: true }));
+    return app;
+  }
+
+  it("allows a Clerk session", async () => {
+    expect((await humanApp("session").request("/human-only")).status).toBe(200);
+  });
+
+  it("403s an API-key request", async () => {
+    expect((await humanApp("apikey").request("/human-only")).status).toBe(403);
   });
 });
 

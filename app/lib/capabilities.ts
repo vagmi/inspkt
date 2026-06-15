@@ -85,6 +85,10 @@ export const can = {
 
   /** Rename or delete the organization. Admins only. */
   manageOrg: (a: Actor): boolean => is(a, "admin"),
+
+  /** Mint and revoke machine API keys. Admins only — and key auth itself is
+   * blocked from these routes (requireHuman), so a key can never mint keys. */
+  manageApiKeys: (a: Actor): boolean => is(a, "admin"),
 };
 
 /** Where to send a user after sign-in, by role. Managers/admins land on the

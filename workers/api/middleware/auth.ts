@@ -14,6 +14,51 @@ import type { ApiEnv } from "../types";
  * first sight. The Clerk session role is used only as that seed, never to
  * authorize.
  */
+/** Bearer scheme prefix for machine API keys. */
+const API_KEY_BEARER = "Bearer inspkt_";
+
+/**
+ * Authenticate either a human Clerk session OR a machine API key, then set the
+ * same request vars (`orgId`, `org`, `userId`, `role`, `authMethod`) so every
+ * downstream `requireCapability(...)` gate works identically for both.
+ *
+ * An API key authenticates as a **manager-equivalent** actor scoped to its org
+ * (full setup capability; no member/role/org management — those are admin-only
+ * and additionally human-gated). The key carries its creator's user id, used
+ * for attribution. Requests with `Authorization: Bearer inspkt_…` take the key
+ * path; everything else falls back to the Clerk session.
+ */
+export const requireOrgOrApiKey = createMiddleware<ApiEnv>(async (c, next) => {
+  const authz = c.req.header("Authorization");
+  if (authz?.startsWith(API_KEY_BEARER)) {
+    const token = authz.slice("Bearer ".length).trim();
+    const result = await c.var.services.apiKeys.authenticate(token);
+    if (!result) {
+      return c.json({ error: "invalid api key" }, 401);
+    }
+    c.set("orgId", result.org.id);
+    c.set("org", result.org);
+    c.set("userId", result.createdByUserId);
+    c.set("role", "manager");
+    c.set("authMethod", "apikey");
+    return next();
+  }
+  c.set("authMethod", "session");
+  return requireOrg(c, next);
+});
+
+/**
+ * Block machine API keys from a route — for actions that must be performed by a
+ * signed-in human (e.g. minting/revoking API keys). 403s key-authenticated
+ * requests; lets Clerk-session requests through.
+ */
+export const requireHuman = createMiddleware<ApiEnv>(async (c, next) => {
+  if (c.var.authMethod === "apikey") {
+    return c.json({ error: "this action requires a signed-in user" }, 403);
+  }
+  await next();
+});
+
 export const requireOrg = createMiddleware<ApiEnv>(async (c, next) => {
   const auth = getAuth(c);
 
