@@ -2,7 +2,7 @@ import {
   UraiChatWidget,
   type WidgetVars,
 } from "@uraiai/chat-widget-react";
-import { MessageSquare, X } from "lucide-react";
+import { X } from "lucide-react";
 import {
   type CSSProperties,
   useCallback,
@@ -33,10 +33,19 @@ const WIDGET_STYLE = {
  * we pass through `vars`; we refetch it from `/app/urai-token` before it
  * expires. Tool-driven `navigate` commands move the app via react-router.
  *
- * Only mounted for `can.setup` members (the layout gates it).
+ * Controlled by the layout (which owns the "Inspkt AI" header toggle and
+ * shifts the main content left while open). Only mounted for `can.setup`
+ * members (the layout gates it).
  */
-export function SetupAssistant({ config }: { config: UraiConfig }) {
-  const [open, setOpen] = useState(false);
+export function SetupAssistant({
+  config,
+  open,
+  onClose,
+}: {
+  config: UraiConfig;
+  open: boolean;
+  onClose: () => void;
+}) {
   const [token, setToken] = useState(config.token);
   const [exp, setExp] = useState(config.exp);
   const location = useLocation();
@@ -100,22 +109,10 @@ export function SetupAssistant({ config }: { config: UraiConfig }) {
 
   return (
     <>
-      {/* Edge tab — visible when the panel is closed. */}
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="Open setup assistant"
-        className={cn(
-          "fixed right-0 top-1/2 z-40 -translate-y-1/2 rounded-l-md border border-r-0 bg-card px-2 py-3 shadow-sm transition-transform hover:bg-accent",
-          open && "translate-x-full",
-        )}
-      >
-        <MessageSquare className="text-stamp size-5" />
-      </button>
-
-      {/* Backdrop on small screens so the overlay panel feels modal. */}
+      {/* Backdrop on small screens so the overlay panel feels modal. (On
+          larger screens the layout reserves space, so no backdrop is needed.) */}
       <div
-        onClick={() => setOpen(false)}
+        onClick={onClose}
         className={cn(
           "fixed inset-0 z-40 bg-black/20 transition-opacity sm:hidden",
           open ? "opacity-100" : "pointer-events-none opacity-0",
@@ -123,6 +120,7 @@ export function SetupAssistant({ config }: { config: UraiConfig }) {
         aria-hidden
       />
 
+      {/* Panel width here must match the layout's reserved margin (sm:mr-[380px]). */}
       <aside
         className={cn(
           "fixed right-0 top-0 z-50 flex h-screen w-full flex-col border-l bg-card shadow-xl transition-transform duration-300 sm:w-[380px]",
@@ -132,12 +130,12 @@ export function SetupAssistant({ config }: { config: UraiConfig }) {
       >
         <div className="flex h-14 shrink-0 items-center justify-between border-b px-4">
           <span className="font-heading text-sm font-semibold">
-            Setup assistant<span className="text-stamp">*</span>
+            Inspkt AI<span className="text-stamp">*</span>
           </span>
           <button
             type="button"
-            onClick={() => setOpen(false)}
-            aria-label="Close setup assistant"
+            onClick={onClose}
+            aria-label="Close Inspkt AI"
             className="text-muted-foreground hover:text-foreground"
           >
             <X className="size-5" />

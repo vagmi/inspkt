@@ -1,6 +1,6 @@
 import { OrganizationSwitcher, UserButton } from "@clerk/react-router";
 import { getAuth } from "@clerk/react-router/server";
-import { Menu, X } from "lucide-react";
+import { Menu, Sparkles, X } from "lucide-react";
 import { useState } from "react";
 import { Link, NavLink, Outlet, redirect } from "react-router";
 import { SetupAssistant } from "~/components/setup-assistant";
@@ -70,88 +70,113 @@ export default function AppLayout({ loaderData }: Route.ComponentProps) {
   const actor = actorFromRole(loaderData.role);
   const nav = NAV.filter((item) => item.show(actor));
   const [menuOpen, setMenuOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const hasAssistant = Boolean(loaderData.urai);
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b bg-card/60">
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6 lg:gap-8">
-          {/* Hamburger — small screens only */}
-          <button
-            type="button"
-            onClick={() => setMenuOpen((o) => !o)}
-            aria-label="Toggle navigation"
-            aria-expanded={menuOpen}
-            className="text-muted-foreground hover:text-foreground -ml-1 lg:hidden"
-          >
-            {menuOpen ? (
-              <X className="size-5" />
-            ) : (
-              <Menu className="size-5" />
-            )}
-          </button>
+    <>
+      {/* The app shell is full-width/fluid; when the assistant is open it
+          reserves space on the right (sm+) so content shifts left instead of
+          being covered. The reserved margin must match the panel width. */}
+      <div
+        className={cn(
+          "min-h-screen transition-[margin] duration-300",
+          hasAssistant && assistantOpen && "sm:mr-[380px]",
+        )}
+      >
+        <header className="border-b bg-card/60">
+          <div className="flex h-14 items-center gap-4 px-4 sm:px-6 lg:gap-8">
+            {/* Hamburger — small screens only */}
+            <button
+              type="button"
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-label="Toggle navigation"
+              aria-expanded={menuOpen}
+              className="text-muted-foreground hover:text-foreground -ml-1 lg:hidden"
+            >
+              {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            </button>
 
-          <Wordmark />
+            <Wordmark />
 
-          {/* Inline nav — large screens only */}
-          <nav className="form-label-mono hidden items-center gap-6 lg:flex">
-            {nav.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={navLinkClass}
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
+            {/* Inline nav — large screens only */}
+            <nav className="form-label-mono hidden items-center gap-6 lg:flex">
+              {nav.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  className={navLinkClass}
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
 
-          <div className="ml-auto flex items-center gap-3 sm:gap-4">
-            <div className="hidden sm:block">
-              <OrganizationSwitcher
-                hidePersonal
-                afterCreateOrganizationUrl="/app"
-                afterSelectOrganizationUrl="/app"
-              />
+            <div className="ml-auto flex items-center gap-3 sm:gap-4">
+              {hasAssistant && (
+                <button
+                  type="button"
+                  onClick={() => setAssistantOpen((o) => !o)}
+                  aria-pressed={assistantOpen}
+                  className={cn(
+                    "form-label-mono flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors",
+                    assistantOpen
+                      ? "border-stamp text-stamp"
+                      : "text-muted-foreground hover:text-foreground hover:border-foreground/30",
+                  )}
+                >
+                  <Sparkles className="size-4" />
+                  <span className="hidden sm:inline">Inspkt AI</span>
+                </button>
+              )}
+              <div className="hidden sm:block">
+                <OrganizationSwitcher
+                  hidePersonal
+                  afterCreateOrganizationUrl="/app"
+                  afterSelectOrganizationUrl="/app"
+                />
+              </div>
+              <UserButton />
             </div>
-            <UserButton />
           </div>
-        </div>
 
-        {/* Collapsible nav panel — small screens only */}
-        <div
-          className={cn(
-            "border-t lg:hidden",
-            menuOpen ? "block" : "hidden",
-          )}
-        >
-          <nav className="form-label-mono mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
-            {nav.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                onClick={() => setMenuOpen(false)}
-                className={(state) => cn(navLinkClass(state), "py-1.5")}
-              >
-                {item.label}
-              </NavLink>
-            ))}
-            <div className="mt-2 border-t pt-3 sm:hidden">
-              <OrganizationSwitcher
-                hidePersonal
-                afterCreateOrganizationUrl="/app"
-                afterSelectOrganizationUrl="/app"
-              />
-            </div>
-          </nav>
-        </div>
-      </header>
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
-        <Outlet />
-      </main>
-      {loaderData.urai && <SetupAssistant config={loaderData.urai} />}
+          {/* Collapsible nav panel — small screens only */}
+          <div className={cn("border-t lg:hidden", menuOpen ? "block" : "hidden")}>
+            <nav className="form-label-mono flex flex-col gap-1 px-4 py-3">
+              {nav.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  onClick={() => setMenuOpen(false)}
+                  className={(state) => cn(navLinkClass(state), "py-1.5")}
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+              <div className="mt-2 border-t pt-3 sm:hidden">
+                <OrganizationSwitcher
+                  hidePersonal
+                  afterCreateOrganizationUrl="/app"
+                  afterSelectOrganizationUrl="/app"
+                />
+              </div>
+            </nav>
+          </div>
+        </header>
+        <main className="px-4 py-6 sm:px-6 sm:py-10">
+          <Outlet />
+        </main>
+      </div>
+      {loaderData.urai && (
+        <SetupAssistant
+          config={loaderData.urai}
+          open={assistantOpen}
+          onClose={() => setAssistantOpen(false)}
+        />
+      )}
       <Toaster position="bottom-right" />
-    </div>
+    </>
   );
 }
