@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { NotFoundError } from "../../workers/api/services/errors";
+import {
+  NotFoundError,
+  ValidationError,
+} from "../../workers/api/services/errors";
 import { createFormsService } from "../../workers/api/services/forms-service";
 import {
   fakeCheckpoint,
@@ -136,6 +139,81 @@ describe("forms service", () => {
     await expect(
       service.update(ORG, "nope", { name: "X" }),
     ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  describe("updateCheckpoint (granular edit)", () => {
+    it("merges the patch onto the checkpoint and writes a single update", async () => {
+      const { service, formsRepo } = makeService();
+      const cp = fakeCheckpoint({
+        id: "cp_x",
+        answerType: "numeric",
+        config: { okMin: 0, okMax: 100, unit: "psi" },
+      });
+      formsRepo.getById.mockResolvedValue({
+        ...fakeForm(),
+        checkpoints: [cp],
+      });
+      formsRepo.updateCheckpoint.mockResolvedValue({ ...cp });
+
+      await service.updateCheckpoint(ORG, "form_1", "cp_x", {
+        config: { okMin: 0, okMax: 50, unit: "psi" },
+      });
+
+      // Only the targeted checkpoint is updated; prompt/type are preserved.
+      expect(formsRepo.updateCheckpoint).toHaveBeenCalledWith(
+        ORG,
+        "form_1",
+        "cp_x",
+        expect.objectContaining({
+          answerType: "numeric",
+          prompt: cp.prompt,
+          config: { okMin: 0, okMax: 50, unit: "psi" },
+        }),
+      );
+    });
+
+    it("rejects an incoherent range (422) without writing", async () => {
+      const { service, formsRepo } = makeService();
+      formsRepo.getById.mockResolvedValue({
+        ...fakeForm(),
+        checkpoints: [
+          fakeCheckpoint({
+            id: "cp_x",
+            answerType: "numeric",
+            config: { okMin: 0, okMax: 100 },
+          }),
+        ],
+      });
+
+      await expect(
+        service.updateCheckpoint(ORG, "form_1", "cp_x", {
+          config: { okMin: 80, okMax: 20 }, // okMin > okMax
+        }),
+      ).rejects.toBeInstanceOf(ValidationError);
+      expect(formsRepo.updateCheckpoint).not.toHaveBeenCalled();
+    });
+
+    it("throws NotFoundError for an unknown checkpoint", async () => {
+      const { service, formsRepo } = makeService();
+      formsRepo.getById.mockResolvedValue({
+        ...fakeForm(),
+        checkpoints: [fakeCheckpoint({ id: "cp_x" })],
+      });
+
+      await expect(
+        service.updateCheckpoint(ORG, "form_1", "ghost", { prompt: "x" }),
+      ).rejects.toBeInstanceOf(NotFoundError);
+      expect(formsRepo.updateCheckpoint).not.toHaveBeenCalled();
+    });
+
+    it("throws NotFoundError for a missing form", async () => {
+      const { service, formsRepo } = makeService();
+      formsRepo.getById.mockResolvedValue(null);
+
+      await expect(
+        service.updateCheckpoint(ORG, "nope", "cp_x", { prompt: "x" }),
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
   });
 
   it("delete throws NotFoundError when nothing was deleted", async () => {

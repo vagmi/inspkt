@@ -3,7 +3,11 @@ import { Hono } from "hono";
 import { can } from "~/lib/capabilities";
 import { requireCapability } from "../middleware/auth";
 import type { ApiEnv } from "../types";
-import { formCreateSchema, formUpdateSchema } from "../validation";
+import {
+  checkpointPatchSchema,
+  formCreateSchema,
+  formUpdateSchema,
+} from "../validation";
 
 /** /api/forms — CRUD for inspection forms (the reusable rubrics). Checkpoints
  * travel inside the form payload as an ordered array; the repo reconciles
@@ -42,6 +46,23 @@ export function createFormsController() {
       const form = await c.var.services.forms.update(
         c.var.orgId,
         c.req.param("id"),
+        c.req.valid("json"),
+      );
+      return c.json({ form });
+    },
+  );
+
+  // Granular checkpoint edit (read-merge-update) — adjust one checkpoint, e.g.
+  // a numeric range, without resending the whole form.
+  app.patch(
+    "/:id/checkpoints/:checkpointId",
+    requireCapability(can.setup),
+    zValidator("json", checkpointPatchSchema),
+    async (c) => {
+      const form = await c.var.services.forms.updateCheckpoint(
+        c.var.orgId,
+        c.req.param("id"),
+        c.req.param("checkpointId"),
         c.req.valid("json"),
       );
       return c.json({ form });

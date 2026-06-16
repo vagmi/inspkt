@@ -23,9 +23,10 @@ export type ApiEnv = {
     /** The APP role for this request, from our membership row — the
      * authorization authority. Gate on this via app/lib/capabilities.ts. */
     role: AppRole;
-    /** How this request authenticated: a human Clerk session, or a machine
-     * API key. Routes that must stay human-only gate on this via requireHuman.
+    /** How this request authenticated: a human Clerk session, a machine API
+     * key, or a short-lived widget token (the embedded setup assistant).
+     * Routes that must stay human-only gate on this via requireHuman.
      * Set by requireOrgOrApiKey. */
-    authMethod: "session" | "apikey";
+    authMethod: "session" | "apikey" | "widget";
   };
 };

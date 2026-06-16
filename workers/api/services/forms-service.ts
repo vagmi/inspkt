@@ -9,7 +9,8 @@ import type {
   FormUpdate,
   FormWithCheckpoints,
 } from "../repositories/forms-repo";
-import { NotFoundError } from "./errors";
+import { checkpointSchema, type CheckpointPatchInput } from "../validation";
+import { NotFoundError, ValidationError } from "./errors";
 
 // Forms are the org's inspection rubrics. Checkpoint config coherence
 // (numeric ranges, rating thresholds) is enforced by zod at the controller
@@ -105,6 +106,72 @@ export function createFormsService({
         ...updated,
         types: await equipmentTypesRepo.typesForForm(orgId, id),
       };
+    },
+
+    /**
+     * Granular edit of a single checkpoint — e.g. adjust a numeric range or
+     * rating threshold — without resending the whole form. Reads the form,
+     * merges the patch onto the target checkpoint, revalidates the merged
+     * result against `checkpointSchema` (so config stays coherent for its
+     * answer type), and writes one atomic UPDATE that keeps the checkpoint id
+     * stable. D1 has no interactive transactions; a single row UPDATE is
+     * atomic on its own.
+     */
+    async updateCheckpoint(
+      orgId: string,
+      formId: string,
+      checkpointId: string,
+      patch: CheckpointPatchInput,
+    ): Promise<FormWithTypes> {
+      const form = await formsRepo.getById(orgId, formId);
+      if (!form) throw new NotFoundError(`form ${formId} not found`);
+      const existing = form.checkpoints.find((c) => c.id === checkpointId);
+      if (!existing) {
+        throw new NotFoundError(`checkpoint ${checkpointId} not found`);
+      }
+
+      // Merge: an absent key keeps the existing value (note `config` and
+      // `section` are nullable, so we check `undefined`, not falsiness). The DB
+      // stores nulls; `checkpointSchema` models absence as `undefined`, so
+      // coerce null → undefined before revalidating.
+      const merged = {
+        section:
+          (patch.section !== undefined ? patch.section : existing.section) ??
+          undefined,
+        prompt: patch.prompt ?? existing.prompt,
+        answerType: patch.answerType ?? existing.answerType,
+        severity: patch.severity ?? existing.severity,
+        critical: patch.critical ?? existing.critical,
+        photoRequired: patch.photoRequired ?? existing.photoRequired,
+        config:
+          (patch.config !== undefined ? patch.config : existing.config) ??
+          undefined,
+      };
+
+      // Revalidate the whole checkpoint so range/threshold coherence holds for
+      // the (possibly new) answer type.
+      const parsed = checkpointSchema.safeParse(merged);
+      if (!parsed.success) {
+        throw new ValidationError(
+          "invalid checkpoint after edit",
+          parsed.error.flatten(),
+        );
+      }
+      const { id: _ignore, ...fields } = parsed.data;
+
+      const updated = await formsRepo.updateCheckpoint(
+        orgId,
+        formId,
+        checkpointId,
+        fields,
+      );
+      if (!updated) throw new NotFoundError(`checkpoint ${checkpointId} not found`);
+
+      const [refreshed, types] = await Promise.all([
+        formsRepo.getById(orgId, formId),
+        equipmentTypesRepo.typesForForm(orgId, formId),
+      ]);
+      return { ...refreshed!, types };
     },
 
     async delete(orgId: string, id: string): Promise<void> {

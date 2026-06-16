@@ -8,6 +8,7 @@ import {
   requireOrg,
   requireOrgOrApiKey,
 } from "../../workers/api/middleware/auth";
+import { mintWidgetToken } from "../../workers/api/lib/widget-token";
 import type { ApiEnv } from "../../workers/api/types";
 import { fakeMembership, fakeOrg, fakeUser } from "../helpers/mocks";
 
@@ -147,6 +148,87 @@ describe("requireOrgOrApiKey middleware (API-key path)", () => {
   });
 });
 
+describe("requireOrgOrApiKey middleware (widget-token path)", () => {
+  const SECRET = "widget-secret-1";
+
+  function widgetApp(org: unknown) {
+    const getById = vi.fn().mockResolvedValue(org);
+    const app = new Hono<ApiEnv>();
+    app.use(async (c, next) => {
+      c.set("services", { organizations: { getById } } as never);
+      await next();
+    });
+    app.use(requireOrgOrApiKey);
+    app.get("/probe", (c) =>
+      c.json({
+        orgId: c.var.orgId,
+        userId: c.var.userId,
+        role: c.var.role,
+        authMethod: c.var.authMethod,
+      }),
+    );
+    return { app, getById };
+  }
+
+  const env = { WIDGET_TOKEN_SECRET: SECRET } as unknown as ApiEnv["Bindings"];
+
+  it("authenticates a valid widget token as a manager scoped to its org", async () => {
+    const { app, getById } = widgetApp(fakeOrg({ id: "org_42" }));
+    const { token } = await mintWidgetToken(SECRET, {
+      orgId: "org_42",
+      role: "manager",
+      userId: "user_9",
+      ttlSeconds: 900,
+    });
+
+    const res = await app.request(
+      "/probe",
+      { headers: { Authorization: `Bearer ${token}` } },
+      env,
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      orgId: "org_42",
+      userId: "user_9",
+      role: "manager",
+      authMethod: "widget",
+    });
+    expect(getById).toHaveBeenCalledWith("org_42");
+  });
+
+  it("401s a token signed with the wrong secret", async () => {
+    const { app } = widgetApp(fakeOrg({ id: "org_42" }));
+    const { token } = await mintWidgetToken("other-secret", {
+      orgId: "org_42",
+      role: "manager",
+      userId: "user_9",
+      ttlSeconds: 900,
+    });
+    const res = await app.request(
+      "/probe",
+      { headers: { Authorization: `Bearer ${token}` } },
+      env,
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("401s when the token's org is unknown", async () => {
+    const { app } = widgetApp(null);
+    const { token } = await mintWidgetToken(SECRET, {
+      orgId: "org_gone",
+      role: "manager",
+      userId: "user_9",
+      ttlSeconds: 900,
+    });
+    const res = await app.request(
+      "/probe",
+      { headers: { Authorization: `Bearer ${token}` } },
+      env,
+    );
+    expect(res.status).toBe(401);
+  });
+});
+
 describe("requireHuman middleware", () => {
   function humanApp(authMethod: string) {
     const app = new Hono<ApiEnv>();
@@ -165,6 +247,10 @@ describe("requireHuman middleware", () => {
 
   it("403s an API-key request", async () => {
     expect((await humanApp("apikey").request("/human-only")).status).toBe(403);
+  });
+
+  it("403s a widget-token request", async () => {
+    expect((await humanApp("widget").request("/human-only")).status).toBe(403);
   });
 });
 

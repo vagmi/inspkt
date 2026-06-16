@@ -1,0 +1,160 @@
+import {
+  UraiChatWidget,
+  type WidgetVars,
+} from "@uraiai/chat-widget-react";
+import { MessageSquare, X } from "lucide-react";
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { useLocation, useNavigate } from "react-router";
+import type { UraiConfig } from "~/lib/urai.server";
+import { cn } from "~/lib/utils";
+
+/** Refresh the widget token this many seconds before it expires. */
+const REFRESH_LEAD_SECONDS = 60;
+
+// The inline widget defaults to a fixed panel size (`--ucw-w` 380px /
+// `--ucw-h` 560px). Override those vars so the chat panel fills our flyout's
+// full height instead of floating at its default size.
+const WIDGET_STYLE = {
+  height: "100%",
+  width: "100%",
+  "--ucw-w": "100%",
+  "--ucw-h": "100%",
+} as CSSProperties;
+
+/**
+ * Right-hand vertical flyout that embeds the Urai setup assistant app-wide.
+ * The assistant's UraiJS tools call our API with the short-lived `inspkt_token`
+ * we pass through `vars`; we refetch it from `/app/urai-token` before it
+ * expires. Tool-driven `navigate` commands move the app via react-router.
+ *
+ * Only mounted for `can.setup` members (the layout gates it).
+ */
+export function SetupAssistant({ config }: { config: UraiConfig }) {
+  const [open, setOpen] = useState(false);
+  const [token, setToken] = useState(config.token);
+  const [exp, setExp] = useState(config.exp);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Context handed to the assistant; deep-compared by the widget, so a fresh
+  // object each render is fine. The UraiJS tools read auth + org from
+  // `meta.vars.metadata` (the `_widget_token` is our short-lived signed token;
+  // orgId is also baked into that token, so this is non-authoritative). The
+  // API base the tools call is the Urai-side `URAI_API_HOST` secret.
+  const vars = useMemo<WidgetVars>(
+    () => ({
+      metadata: { _widget_token: token, org_id: config.orgId },
+      route: location.pathname,
+    }),
+    [token, config.orgId, location.pathname],
+  );
+
+  // Keep the token alive: schedule a refetch shortly before expiry.
+  useEffect(() => {
+    const nowSeconds = Date.now() / 1000;
+    const delayMs = Math.max(exp - nowSeconds - REFRESH_LEAD_SECONDS, 5) * 1000;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch("/app/urai-token");
+        if (!res.ok) return;
+        const next = (await res.json()) as { token: string; exp: number };
+        if (!cancelled) {
+          setToken(next.token);
+          setExp(next.exp);
+        }
+      } catch {
+        // Network hiccup — the next render's effect reschedules from `exp`.
+      }
+    }, delayMs);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [exp]);
+
+  // A uraiJS tool signalled the host page via meta.urai.sendCommand. Untrusted —
+  // validate the shape ({ type:"navigate", payload:{ path } }) before acting,
+  // and only follow in-app paths. (Tool-call progress is shown by the widget
+  // itself via native tool traces, so we don't handle that here.)
+  const onCommand = useCallback(
+    (command: unknown) => {
+      if (!command || typeof command !== "object") return;
+      const cmd = command as { type?: unknown; payload?: { path?: unknown } };
+      if (
+        cmd.type === "navigate" &&
+        typeof cmd.payload?.path === "string" &&
+        cmd.payload.path.startsWith("/app")
+      ) {
+        navigate(cmd.payload.path);
+      }
+    },
+    [navigate],
+  );
+
+  return (
+    <>
+      {/* Edge tab — visible when the panel is closed. */}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label="Open setup assistant"
+        className={cn(
+          "fixed right-0 top-1/2 z-40 -translate-y-1/2 rounded-l-md border border-r-0 bg-card px-2 py-3 shadow-sm transition-transform hover:bg-accent",
+          open && "translate-x-full",
+        )}
+      >
+        <MessageSquare className="text-stamp size-5" />
+      </button>
+
+      {/* Backdrop on small screens so the overlay panel feels modal. */}
+      <div
+        onClick={() => setOpen(false)}
+        className={cn(
+          "fixed inset-0 z-40 bg-black/20 transition-opacity sm:hidden",
+          open ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
+        aria-hidden
+      />
+
+      <aside
+        className={cn(
+          "fixed right-0 top-0 z-50 flex h-screen w-full flex-col border-l bg-card shadow-xl transition-transform duration-300 sm:w-[380px]",
+          open ? "translate-x-0" : "translate-x-full",
+        )}
+        aria-hidden={!open}
+      >
+        <div className="flex h-14 shrink-0 items-center justify-between border-b px-4">
+          <span className="font-heading text-sm font-semibold">
+            Setup assistant<span className="text-stamp">*</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="Close setup assistant"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+        <div className="min-h-0 flex-1">
+          <UraiChatWidget
+            mode="inline"
+            baseUrl={config.chatBase}
+            widgetToken={config.widgetToken}
+            userId={config.userId}
+            vars={vars}
+            onCommand={onCommand}
+            style={WIDGET_STYLE}
+          />
+        </div>
+      </aside>
+    </>
+  );
+}

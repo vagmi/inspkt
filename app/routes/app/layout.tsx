@@ -3,9 +3,11 @@ import { getAuth } from "@clerk/react-router/server";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Link, NavLink, Outlet, redirect } from "react-router";
+import { SetupAssistant } from "~/components/setup-assistant";
 import { Toaster } from "~/components/ui/sonner";
 import { actorFromRole, can, type Actor } from "~/lib/capabilities";
 import { apiFetch } from "~/lib/api-client.server";
+import { getUraiConfig } from "~/lib/urai.server";
 import { cn } from "~/lib/utils";
 import type { Route } from "./+types/layout";
 
@@ -19,8 +21,16 @@ export async function loader(args: Route.LoaderArgs) {
     throw redirect("/app/select-org");
   }
   // The app role drives which nav (mode) this member sees.
-  const me = await apiFetch<{ role: string }>(args.request, "/api/me");
-  return { role: me.role };
+  const me = await apiFetch<{ role: string; orgId: string; userId: string }>(
+    args.request,
+    "/api/me",
+  );
+  // The setup assistant is a setup-only tool; mint its embed config (token +
+  // Urai config) for admins/managers, when the widget is configured.
+  const urai = can.setup(actorFromRole(me.role))
+    ? await getUraiConfig({ orgId: me.orgId, userId: me.userId })
+    : null;
+  return { role: me.role, urai };
 }
 
 function Wordmark() {
@@ -140,6 +150,7 @@ export default function AppLayout({ loaderData }: Route.ComponentProps) {
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
         <Outlet />
       </main>
+      {loaderData.urai && <SetupAssistant config={loaderData.urai} />}
       <Toaster position="bottom-right" />
     </div>
   );

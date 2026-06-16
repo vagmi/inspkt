@@ -114,6 +114,7 @@ export function mockFormsRepo() {
     listByOrg: vi.fn(),
     countByOrg: vi.fn(),
     update: vi.fn(),
+    updateCheckpoint: vi.fn(),
     delete: vi.fn(),
   };
 }
@@ -124,6 +125,7 @@ export function mockFormsService() {
     get: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    updateCheckpoint: vi.fn(),
     delete: vi.fn(),
   };
 }

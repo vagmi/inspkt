@@ -183,6 +183,36 @@ describe("forms controller", () => {
     expect(patch.typeIds).toEqual(["type_1", "type_2"]);
   });
 
+  it("PATCH /forms/:id/checkpoints/:cpId routes a granular edit through", async () => {
+    const { app, forms } = makeApp();
+    forms.updateCheckpoint.mockResolvedValue({
+      ...fakeForm(),
+      checkpoints: [fakeCheckpoint({ id: "cp_1" })],
+      types: [],
+    });
+
+    const res = await app.request(
+      "/forms/form_1/checkpoints/cp_1",
+      json({ config: { okMin: 0, okMax: 50 } }, "PATCH"),
+    );
+    expect(res.status).toBe(200);
+    const [orgId, formId, cpId, patch] = forms.updateCheckpoint.mock.calls[0];
+    expect(orgId).toBe("org_test_1");
+    expect(formId).toBe("form_1");
+    expect(cpId).toBe("cp_1");
+    expect(patch).toMatchObject({ config: { okMin: 0, okMax: 50 } });
+  });
+
+  it("PATCH /forms/:id/checkpoints/:cpId rejects an empty patch", async () => {
+    const { app, forms } = makeApp();
+    const res = await app.request(
+      "/forms/form_1/checkpoints/cp_1",
+      json({}, "PATCH"),
+    );
+    expect(res.status).toBe(400);
+    expect(forms.updateCheckpoint).not.toHaveBeenCalled();
+  });
+
   it("GET /forms/:id maps NotFoundError to 404", async () => {
     const { app, forms } = makeApp();
     forms.get.mockRejectedValue(new NotFoundError("nope"));

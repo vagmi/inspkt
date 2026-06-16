@@ -186,6 +186,38 @@ export function createFormsRepo(db: Db) {
       return { ...form, checkpoints: await listCheckpoints(orgId, id) };
     },
 
+    /** Update one checkpoint's fields in place (single atomic statement). The
+     * id is preserved so inspections that reference it stay valid. Scoped by
+     * org + form so a checkpoint can't be edited across tenants. */
+    async updateCheckpoint(
+      orgId: string,
+      formId: string,
+      checkpointId: string,
+      fields: Omit<CheckpointInput, "id">,
+    ): Promise<Checkpoint | null> {
+      const [row] = await db
+        .update(checkpoints)
+        .set({
+          section: fields.section ?? null,
+          prompt: fields.prompt,
+          answerType: fields.answerType,
+          severity: fields.severity,
+          critical: fields.critical,
+          photoRequired: fields.photoRequired,
+          config: fields.config ?? null,
+          updatedAt: now(),
+        })
+        .where(
+          and(
+            eq(checkpoints.orgId, orgId),
+            eq(checkpoints.formId, formId),
+            eq(checkpoints.id, checkpointId),
+          ),
+        )
+        .returning();
+      return row ?? null;
+    },
+
     async delete(orgId: string, id: string): Promise<boolean> {
       await db
         .delete(checkpoints)

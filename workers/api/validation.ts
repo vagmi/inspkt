@@ -114,7 +114,26 @@ export const formUpdateSchema = z
   })
   .refine((v) => Object.keys(v).length > 0, "no fields to update");
 
+/** Patch for a single checkpoint (granular edit, e.g. adjust a numeric range).
+ * Loose by design: the service merges it onto the existing checkpoint and
+ * revalidates the result against `checkpointSchema`, so config coherence
+ * (which depends on the answer type) is enforced after the merge, not here. */
+export const checkpointPatchSchema = z
+  .object({
+    section: z.string().max(120).nullable().optional(),
+    prompt: z.string().min(1).max(500).optional(),
+    answerType: z
+      .enum(["pass_fail", "numeric", "rating", "observation"])
+      .optional(),
+    severity: z.enum(["minor", "major", "critical"]).optional(),
+    critical: z.boolean().optional(),
+    photoRequired: z.boolean().optional(),
+    config: z.unknown().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, "no fields to update");
+
 export type CheckpointInputParsed = z.infer<typeof checkpointSchema>;
+export type CheckpointPatchInput = z.infer<typeof checkpointPatchSchema>;
 export type FormCreateInput = z.infer<typeof formCreateSchema>;
 export type FormUpdateInput = z.infer<typeof formUpdateSchema>;
 

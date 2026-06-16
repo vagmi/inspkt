@@ -9,6 +9,10 @@ export default [
   // loaders (which 403 without an active org) never run.
   route("app/select-org", "routes/app/select-org.tsx"),
 
+  // Resource route: mints short-lived widget tokens for the setup assistant.
+  // Standalone (no UI) so it doesn't inherit the dashboard layout.
+  route("app/urai-token", "routes/app/urai-token.ts"),
+
   // Org-scoped dashboard. Add your own resource routes alongside `items`.
   route("app", "routes/app/layout.tsx", [
     index("routes/app/clients-list.tsx"),

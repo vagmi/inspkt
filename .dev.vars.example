@@ -10,3 +10,14 @@ CLERK_PUBLISHABLE_KEY=pk_test_xxx
 CLERK_WEBHOOK_SECRET=whsec_xxx
 
 APP_URL=http://localhost:5173
+
+# Urai chat widget (setup assistant).
+# URAI_CHAT_BASE: chat-service origin the browser widget talks to.
+#   Default hosted: https://chat.app.urai.dev ; local dev: http://localhost:5174
+# URAI_WIDGET_TOKEN: public widget token from the Urai dashboard.
+# WIDGET_TOKEN_SECRET: signs short-lived `inspktw_` tokens the widget's UraiJS
+#   tools use to call our API. Any random string; rotating it invalidates all
+#   live widget tokens. Generate: openssl rand -hex 32
+URAI_CHAT_BASE=http://localhost:5174
+URAI_WIDGET_TOKEN=
+WIDGET_TOKEN_SECRET=

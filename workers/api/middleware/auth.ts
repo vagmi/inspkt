@@ -1,6 +1,7 @@
 import { getAuth } from "@clerk/hono";
 import { createMiddleware } from "hono/factory";
 import { actorFromRole, isAppRole, type Actor } from "~/lib/capabilities";
+import { verifyWidgetToken } from "../lib/widget-token";
 import type { ApiEnv } from "../types";
 
 /**
@@ -16,20 +17,45 @@ import type { ApiEnv } from "../types";
  */
 /** Bearer scheme prefix for machine API keys. */
 const API_KEY_BEARER = "Bearer inspkt_";
+/** Bearer scheme prefix for short-lived widget tokens (setup assistant). */
+const WIDGET_BEARER = "Bearer inspktw_";
 
 /**
- * Authenticate either a human Clerk session OR a machine API key, then set the
- * same request vars (`orgId`, `org`, `userId`, `role`, `authMethod`) so every
- * downstream `requireCapability(...)` gate works identically for both.
+ * Authenticate a human Clerk session, a machine API key, OR a short-lived
+ * widget token, then set the same request vars (`orgId`, `org`, `userId`,
+ * `role`, `authMethod`) so every downstream `requireCapability(...)` gate works
+ * identically for all three.
  *
- * An API key authenticates as a **manager-equivalent** actor scoped to its org
- * (full setup capability; no member/role/org management — those are admin-only
- * and additionally human-gated). The key carries its creator's user id, used
- * for attribution. Requests with `Authorization: Bearer inspkt_…` take the key
- * path; everything else falls back to the Clerk session.
+ * Both the API key and the widget token authenticate as a **manager-equivalent**
+ * actor scoped to one org (full setup capability; no member/role/org management
+ * — those are admin-only and additionally human-gated via requireHuman). The
+ * widget token is signed + self-describing (orgId comes from its verified
+ * payload, never from request-supplied vars) and short-lived. Prefix routing:
+ * `Bearer inspktw_…` → widget; `Bearer inspkt_…` → API key; else Clerk session.
  */
 export const requireOrgOrApiKey = createMiddleware<ApiEnv>(async (c, next) => {
   const authz = c.req.header("Authorization");
+
+  if (authz?.startsWith(WIDGET_BEARER)) {
+    const token = authz.slice("Bearer ".length).trim();
+    const claims = await verifyWidgetToken(c.env.WIDGET_TOKEN_SECRET, token);
+    if (!claims) {
+      return c.json({ error: "invalid or expired widget token" }, 401);
+    }
+    const org = await c.var.services.organizations.getById(claims.orgId);
+    if (!org) {
+      return c.json({ error: "unknown organization" }, 401);
+    }
+    c.set("orgId", org.id);
+    c.set("org", org);
+    c.set("userId", claims.userId);
+    // The token is minted manager-equivalent; fall back to least privilege if a
+    // future minter ever embeds an unknown role.
+    c.set("role", isAppRole(claims.role) ? claims.role : "inspector");
+    c.set("authMethod", "widget");
+    return next();
+  }
+
   if (authz?.startsWith(API_KEY_BEARER)) {
     const token = authz.slice("Bearer ".length).trim();
     const result = await c.var.services.apiKeys.authenticate(token);
@@ -48,12 +74,12 @@ export const requireOrgOrApiKey = createMiddleware<ApiEnv>(async (c, next) => {
 });
 
 /**
- * Block machine API keys from a route — for actions that must be performed by a
- * signed-in human (e.g. minting/revoking API keys). 403s key-authenticated
+ * Block non-human callers from a route — for actions that must be performed by
+ * a signed-in human (e.g. minting/revoking API keys). 403s API-key and widget
  * requests; lets Clerk-session requests through.
  */
 export const requireHuman = createMiddleware<ApiEnv>(async (c, next) => {
-  if (c.var.authMethod === "apikey") {
+  if (c.var.authMethod !== "session") {
     return c.json({ error: "this action requires a signed-in user" }, 403);
   }
   await next();
