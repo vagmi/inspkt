@@ -255,3 +255,11 @@
 @utility animate-stamp-in {
   animation: stamp-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
+
+/* The Urai inline chat widget mounts its UI in a closed shadow root, so we can
+   only size its light-DOM host from here (the `.ucw-root`/`.ucw-panel` fill is
+   handled inside the widget's own stylesheet). This host is `display: block`
+   with auto height; give it 100% so the shadow tree has a sized parent to fill. */
+[data-urai-chat-widget] {
+  height: 100%;
+}

@@ -36,8 +36,8 @@ importers:
         specifier: ^8.21.3
         version: 8.21.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@uraiai/chat-widget-react':
-        specifier: 0.1.4
-        version: 0.1.4(react@19.2.7)
+        specifier: 0.1.6
+        version: 0.1.6(react@19.2.7)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -2566,11 +2566,11 @@ packages:
   '@types/validate-npm-package-name@4.0.2':
     resolution: {integrity: sha512-lrpDziQipxCEeK5kWxvljWYhUvOiB2A9izZd9B2AFarYAkqZshb4lPbRs7zKEic6eGtH8V/2qJW+dPp9OtF6bw==}
 
-  '@uraiai/chat-widget-core@0.1.4':
-    resolution: {integrity: sha512-+aQnl7ijf6QP9RKP0ddiifRvA+KaI1rBjqDdjAFHd0xBmVIHeVOOBKvymdM9qfuOVAd5JsbFqCpZstFio5I4uA==}
+  '@uraiai/chat-widget-core@0.1.6':
+    resolution: {integrity: sha512-skz3SBYGnW2nfL1g1W0VugGkQb7cIQBtZzl9PRWoxdu9hR4gOXcp/SCCWc19rRTecZk63liNmLqBEmT4u9wH2A==}
 
-  '@uraiai/chat-widget-react@0.1.4':
-    resolution: {integrity: sha512-pRV2KWQVTv1EWQDRl3nCGHkaaldelfdtQZJaSPrJrZKMBSMfo2kIURxs7368c5eNBSUHOdsE1eb/wk6NHPbgFg==}
+  '@uraiai/chat-widget-react@0.1.6':
+    resolution: {integrity: sha512-BJQVUUp9FaM+o9JFjX3UFbfTkvteqYMtMc+2l0xg2v9iDyeHwyw7FzuK3/TsgWmC7+xamn0JdveaLoIuuzkmGg==}
     peerDependencies:
       react: '>=18 <20'
 
@@ -6617,14 +6617,14 @@ snapshots:
 
   '@types/validate-npm-package-name@4.0.2': {}
 
-  '@uraiai/chat-widget-core@0.1.4':
+  '@uraiai/chat-widget-core@0.1.6':
     dependencies:
       dompurify: 3.4.10
       marked: 16.4.2
 
-  '@uraiai/chat-widget-react@0.1.4(react@19.2.7)':
+  '@uraiai/chat-widget-react@0.1.6(react@19.2.7)':
     dependencies:
-      '@uraiai/chat-widget-core': 0.1.4
+      '@uraiai/chat-widget-core': 0.1.6
       react: 19.2.7
 
   '@vitest/expect@4.1.8':

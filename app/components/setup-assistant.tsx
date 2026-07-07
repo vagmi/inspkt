@@ -18,13 +18,15 @@ import { cn } from "~/lib/utils";
 const REFRESH_LEAD_SECONDS = 60;
 
 // The inline widget defaults to a fixed panel size (`--ucw-w` 380px /
-// `--ucw-h` 560px). Override those vars so the chat panel fills our flyout's
-// full height instead of floating at its default size.
+// `--ucw-h` 560px). Override those vars so the chat panel fills our flyout.
+// Height is viewport-relative (`100vh`) rather than `100%`: a percentage
+// collapses to content height wherever the widget's internal wrapper chain
+// isn't explicitly sized, leaving a gap below the input bar.
 const WIDGET_STYLE = {
-  height: "100%",
+  height: "100vh",
   width: "100%",
   "--ucw-w": "100%",
-  "--ucw-h": "100%",
+  "--ucw-h": "100vh",
 } as CSSProperties;
 
 /**
@@ -128,19 +130,20 @@ export function SetupAssistant({
         )}
         aria-hidden={!open}
       >
-        <div className="flex h-14 shrink-0 items-center justify-between border-b px-4">
-          <span className="font-heading text-sm font-semibold">
-            Inspkt AI<span className="text-stamp">*</span>
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close Inspkt AI"
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <X className="size-5" />
-          </button>
-        </div>
+        {/* The widget renders its own header, so we don't add one here (avoids a
+            double header). The close button floats just outside the panel's left
+            edge, vertically centered in the viewport. */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close Inspkt AI"
+          className={cn(
+            "absolute left-0 top-1/2 z-10 flex size-9 -translate-x-full -translate-y-1/2 items-center justify-center rounded-l-full border border-r-0 bg-card text-muted-foreground shadow-md transition-colors hover:text-foreground",
+            open ? "opacity-100" : "pointer-events-none opacity-0",
+          )}
+        >
+          <X className="size-5" />
+        </button>
         <div className="min-h-0 flex-1">
           <UraiChatWidget
             mode="inline"
