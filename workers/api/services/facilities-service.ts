@@ -1,4 +1,4 @@
-import { currentPeriod, getPlan } from "~/lib/plans";
+import { currentPeriod } from "~/lib/plans";
 import type { ClientsRepo } from "../repositories/clients-repo";
 import type {
   Facility,
@@ -8,11 +8,11 @@ import type {
   FacilityUpdate,
 } from "../repositories/facilities-repo";
 import type { UsageRepo } from "../repositories/usage-repo";
-import { NotFoundError, PlanLimitError } from "./errors";
+import { NotFoundError } from "./errors";
 
 // Facilities are sites belonging to a client. Business rules: the client must
-// belong to the org, the plan caps how many facilities an org can register, and
-// creation bumps the monthly usage meter.
+// belong to the org, and creation bumps the monthly usage meter. (This is a
+// demo build — the per-plan facility cap has been removed.)
 
 export interface FacilitiesServiceDeps {
   facilitiesRepo: FacilitiesRepo;
@@ -47,22 +47,13 @@ export function createFacilitiesService({
 
     get,
 
-    /** Gated on the org's plan (max facilities) and validated against the
-     * owning client. Bumps the monthly usage counter. */
+    /** Validated against the owning client. Bumps the monthly usage counter. */
     async create(
       orgId: string,
-      plan: string,
       input: Omit<FacilityCreate, "orgId">,
     ): Promise<Facility> {
       await assertClient(orgId, input.clientId);
 
-      const limits = getPlan(plan);
-      const count = await facilitiesRepo.countByOrg(orgId);
-      if (count >= limits.maxFacilities) {
-        throw new PlanLimitError(
-          `the ${plan} plan allows ${limits.maxFacilities} facilities — upgrade to add more`,
-        );
-      }
       const facility = await facilitiesRepo.create({ ...input, orgId });
       await usageRepo.increment(orgId, currentPeriod());
       return facility;

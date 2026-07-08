@@ -61,7 +61,7 @@ describe("facilities controller", () => {
     facilities.create.mockResolvedValue(fakeFacility());
     const res = await app.request("/facilities", json(valid));
     expect(res.status).toBe(201);
-    expect(facilities.create).toHaveBeenCalledWith("org_test_1", "free", valid);
+    expect(facilities.create).toHaveBeenCalledWith("org_test_1", valid);
   });
 
   it("POST /facilities 403s an inspector (can.setup)", async () => {

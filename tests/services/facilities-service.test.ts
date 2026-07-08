@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createFacilitiesService } from "../../workers/api/services/facilities-service";
-import {
-  NotFoundError,
-  PlanLimitError,
-} from "../../workers/api/services/errors";
+import { NotFoundError } from "../../workers/api/services/errors";
 import {
   fakeClient,
   fakeFacility,
@@ -28,13 +25,12 @@ function makeService() {
 
 describe("facilities service", () => {
   describe("create", () => {
-    it("creates and meters when under the plan limit and the client exists", async () => {
+    it("creates and meters when the client exists", async () => {
       const { service, facilitiesRepo, clientsRepo, usageRepo } = makeService();
       clientsRepo.getById.mockResolvedValue(fakeClient());
-      facilitiesRepo.countByOrg.mockResolvedValue(1);
       facilitiesRepo.create.mockResolvedValue(fakeFacility());
 
-      await service.create(ORG, "free", {
+      await service.create(ORG, {
         clientId: "client_1",
         name: "Building A",
       });
@@ -52,22 +48,8 @@ describe("facilities service", () => {
       clientsRepo.getById.mockResolvedValue(null);
 
       await expect(
-        service.create(ORG, "free", { clientId: "ghost", name: "X" }),
+        service.create(ORG, { clientId: "ghost", name: "X" }),
       ).rejects.toBeInstanceOf(NotFoundError);
-      expect(facilitiesRepo.create).not.toHaveBeenCalled();
-    });
-
-    it("rejects with PlanLimitError at the free-tier cap", async () => {
-      const { service, facilitiesRepo, clientsRepo } = makeService();
-      clientsRepo.getById.mockResolvedValue(fakeClient());
-      facilitiesRepo.countByOrg.mockResolvedValue(3); // free cap
-
-      await expect(
-        service.create(ORG, "free", {
-          clientId: "client_1",
-          name: "One too many",
-        }),
-      ).rejects.toBeInstanceOf(PlanLimitError);
       expect(facilitiesRepo.create).not.toHaveBeenCalled();
     });
   });

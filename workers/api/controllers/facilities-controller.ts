@@ -25,7 +25,6 @@ export function createFacilitiesController() {
     async (c) => {
       const facility = await c.var.services.facilities.create(
         c.var.orgId,
-        c.var.org.plan,
         c.req.valid("json"),
       );
       return c.json({ facility }, 201);

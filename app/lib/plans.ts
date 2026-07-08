@@ -1,15 +1,15 @@
 // Plan limits live in config, not the database: changing limits is a deploy,
 // not a migration, and hot paths read zero extra rows. See docs/architecture.md.
 //
-// `maxFacilities` gates how many facilities an org can register (enforced in
-// facilities-service). `maxInspectionsPerMonth` and `dataRetentionDays` are
-// surfaced on the pricing page; wire their gates where inspections are created
-// and pruned. Use `UNLIMITED` for any axis with no ceiling; `dataRetentionDays`
-// is `null` when inspection history is kept forever.
+// NOTE: this is a demo build — none of these limits are enforced. The values
+// below (`maxFacilities`, `maxInspectionsPerMonth`, `dataRetentionDays`, etc.)
+// are kept only to drive the marketing pricing page; no service gates on them.
+// Use `UNLIMITED` for any axis with no ceiling; `dataRetentionDays` is `null`
+// when inspection history is kept forever.
 //
-// Out of the box every org is on "free" — the paid tiers below are config the
-// gates already honor, but moving an org onto one needs a billing integration
-// (install the `billing-polar` skill for Polar checkout/portal/webhooks).
+// To restore paid gating, re-add the `getPlan()` checks where features are
+// created/pruned and install the `billing-polar` skill for Polar
+// checkout/portal/webhooks.
 
 export type PlanId = "free" | "pro" | "business";
 
