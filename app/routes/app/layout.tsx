@@ -1,6 +1,6 @@
 import { OrganizationSwitcher, UserButton } from "@clerk/react-router";
 import { getAuth } from "@clerk/react-router/server";
-import { Menu, Sparkles, X } from "lucide-react";
+import { Menu, MessageCircle, X } from "lucide-react";
 import { useState } from "react";
 import { Link, NavLink, Outlet, redirect } from "react-router";
 import { SetupAssistant } from "~/components/setup-assistant";
@@ -120,14 +120,14 @@ export default function AppLayout({ loaderData }: Route.ComponentProps) {
                   onClick={() => setAssistantOpen((o) => !o)}
                   aria-pressed={assistantOpen}
                   className={cn(
-                    "form-label-mono flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors",
+                    "form-label-mono flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-white shadow-sm transition-colors",
                     assistantOpen
-                      ? "border-stamp text-stamp"
-                      : "text-muted-foreground hover:text-foreground hover:border-foreground/30",
+                      ? "border-stamp bg-stamp hover:bg-stamp/90"
+                      : "border-neutral-900 bg-neutral-900 hover:bg-neutral-800",
                   )}
                 >
-                  <Sparkles className="size-4" />
-                  <span className="hidden sm:inline">Inspkt AI</span>
+                  <MessageCircle className="size-4" />
+                  <span className="hidden sm:inline">Ask AI</span>
                 </button>
               )}
               <div className="hidden sm:block">
