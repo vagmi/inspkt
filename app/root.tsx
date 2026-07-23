@@ -23,7 +23,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        {/* `viewport-fit=cover` makes the `env(safe-area-inset-*)` values
+            resolve (they're 0 otherwise), and `interactive-widget` makes the
+            on-screen keyboard shrink the layout viewport so `dvh`-sized panes
+            — the assistant flyout and its input bar — stay above it. */}
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+        />
         <Meta />
         <Links />
       </head>

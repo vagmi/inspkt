@@ -19,14 +19,21 @@ const REFRESH_LEAD_SECONDS = 60;
 
 // The inline widget defaults to a fixed panel size (`--ucw-w` 380px /
 // `--ucw-h` 560px). Override those vars so the chat panel fills our flyout.
-// Height is viewport-relative (`100vh`) rather than `100%`: a percentage
-// collapses to content height wherever the widget's internal wrapper chain
-// isn't explicitly sized, leaving a gap below the input bar.
+// Height is viewport-relative rather than `100%`: a percentage collapses to
+// content height wherever the widget's internal wrapper chain isn't explicitly
+// sized, leaving a gap below the input bar.
+//
+// It must be `dvh`, not `vh`: on mobile browsers `100vh` is the *large*
+// viewport (toolbar retracted), so with the URL bar on screen the widget's
+// input bar is pushed underneath it. `dvh` tracks the toolbar, and the
+// safe-area inset keeps the input clear of the gesture bar. Device emulation
+// in DevTools has no retracting toolbar, so this only shows on real hardware.
+const WIDGET_HEIGHT = "calc(100dvh - env(safe-area-inset-bottom))";
 const WIDGET_STYLE = {
-  height: "100vh",
+  height: WIDGET_HEIGHT,
   width: "100%",
   "--ucw-w": "100%",
-  "--ucw-h": "100vh",
+  "--ucw-h": WIDGET_HEIGHT,
 } as CSSProperties;
 
 /**
@@ -125,7 +132,7 @@ export function SetupAssistant({
       {/* Panel width here must match the layout's reserved margin (sm:mr-[380px]). */}
       <aside
         className={cn(
-          "fixed right-0 top-0 z-50 flex h-screen w-full flex-col border-l bg-card shadow-xl transition-transform duration-300 sm:w-[380px]",
+          "fixed right-0 top-0 z-50 flex h-dvh w-full flex-col border-l bg-card pb-[env(safe-area-inset-bottom)] shadow-xl transition-transform duration-300 sm:w-[380px]",
           open ? "translate-x-0" : "translate-x-full",
         )}
         aria-hidden={!open}
