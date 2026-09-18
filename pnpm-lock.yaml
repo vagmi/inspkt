@@ -36,8 +36,8 @@ importers:
         specifier: ^8.21.3
         version: 8.21.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@uraiai/chat-widget-react':
-        specifier: 0.2.4
-        version: 0.2.4(@types/react@19.2.17)(react@19.2.7)
+        specifier: 0.2.5
+        version: 0.2.5(@types/react@19.2.17)(react@19.2.7)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -2590,11 +2590,11 @@ packages:
   '@ungap/structured-clone@1.4.0':
     resolution: {integrity: sha512-1mEZtMKPM09vDmQt5y7YvmN2+DFTP7Tg0EWXdic8/C6VRnpb33e4ghisCIE3WZjsE2N8mf+QV1Zqh7ZFYLWInQ==}
 
-  '@uraiai/chat-widget-core@0.2.4':
-    resolution: {integrity: sha512-elkigX/UJhTbT9ctbMeJer5JYhWCtFntty3vNSvySCP8RS0rsmDYk11MKpulGcHIEQV5L8CQHhG0OFvDjYAP6w==}
+  '@uraiai/chat-widget-core@0.2.5':
+    resolution: {integrity: sha512-YERWMNZy8f8zS2vZ7FMJtoY1NB5496a5D6HPvZToF/7nZAvJDkZ1vX5l/B8SrkkMCb5cgEGleUBQULUntU73Tg==}
 
-  '@uraiai/chat-widget-react@0.2.4':
-    resolution: {integrity: sha512-VJP+k72lByrjwntQdeUm+iVdFbXspLPqmV1FmLbNJLZGe473yI7f/cNsB1FzTy3JATPRk/ZyUVJAH3AOzw542g==}
+  '@uraiai/chat-widget-react@0.2.5':
+    resolution: {integrity: sha512-t/Mev5aF2neXceeh5/QjLToTZfMnL9lZYNh9dqk/lagY+14p8cScLyqutsAEBTE8Y45gcLfE23kGioLDeYzzAQ==}
     peerDependencies:
       react: '>=18 <20'
 
@@ -6970,14 +6970,14 @@ snapshots:
 
   '@ungap/structured-clone@1.4.0': {}
 
-  '@uraiai/chat-widget-core@0.2.4':
+  '@uraiai/chat-widget-core@0.2.5':
     dependencies:
       dompurify: 3.4.10
       marked: 16.4.2
 
-  '@uraiai/chat-widget-react@0.2.4(@types/react@19.2.17)(react@19.2.7)':
+  '@uraiai/chat-widget-react@0.2.5(@types/react@19.2.17)(react@19.2.7)':
     dependencies:
-      '@uraiai/chat-widget-core': 0.2.4
+      '@uraiai/chat-widget-core': 0.2.5
       react: 19.2.7
       react-markdown: 9.1.0(@types/react@19.2.17)(react@19.2.7)
       rehype-raw: 7.0.0
